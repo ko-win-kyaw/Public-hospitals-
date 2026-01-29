@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Community - User</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <style>
+        :root { --primary: #800080; --bg: #f0f2f5; --danger: #ff4d4d; --pinned: #fff9c4; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
+        .header { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; position: sticky; top: 0; z-index: 1000; display: flex; justify-content: space-between; align-items: center; }
+        .back-btn button { background: white; border: none; border-radius: 5px; cursor: pointer; padding: 5px 10px; }
+        .admin-login-btn { background: #fff; color: var(--primary); border: none; padding: 5px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .container { max-width: 500px; margin: auto; padding: 10px; }
+        .post-card, .feed-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; }
+        .feed-card.pinned { border: 2px solid #ffd700; background: var(--pinned); }
+        textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 12px; box-sizing: border-box; resize: none; font-size: 16px; outline: none; background: #f5f6f7; }
+        .btn-post { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px; }
+        .del-btn { color: var(--danger); font-size: 11px; cursor: pointer; font-weight: bold; }
+        .pin-btn { color: #555; font-size: 11px; cursor: pointer; font-weight: bold; margin-right: 10px; }
+        .action-bar { display: flex; border-top: 1px solid #eee; margin-top: 10px; padding-top: 10px; justify-content: space-around; }
+        .action-btn { background: none; border: none; color: #65676b; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .comment-section { margin-top: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; padding: 10px; }
+        .comment-item { background: white; border-radius: 10px; padding: 8px; margin-bottom: 5px; font-size: 13px; border: 1px solid #eee; }
+        .comment-input-box { display: flex; gap: 5px; margin-top: 10px; }
+        .comment-input { flex: 1; border-radius: 20px; border: 1px solid #ddd; padding: 6px 12px; outline: none; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div style="text-align: left;">
+        <div>Health Community Feed</div>
+        <small id="userNameDisplay" style="font-size: 10px; opacity: 0.8;"></small>
+    </div>
+    <div>
+        <button id="adminLoginBtn" class="admin-login-btn" onclick="adminLogin()"> 🔑</button>
+        <a href="index.html" class="back-btn"><button>🏠</button></a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="post-card">
+        <h3 style="color: var(--primary); margin: 0 0 10px 0;">App Feedback & Rating</h3>
+        <div id="ratingStars" style="font-size: 35px; color: #ddd; cursor: pointer; margin-bottom: 10px; display: flex; gap: 5px;">
+            <span onclick="setRating(1)">⭐</span><span onclick="setRating(2)">⭐</span><span onclick="setRating(3)">⭐</span><span onclick="setRating(4)">⭐</span><span onclick="setRating(5)">⭐</span>
+        </div>
+        <textarea id="feedbackText" rows="2" placeholder="ဒီ App အပေါ် သင့်အမြင်ကို ရေးပေးပါ..."></textarea>
+        <button class="btn-post" onclick="submitFeedback()">Feedback ပေးမည်</button>
+        <div id="averageRatingDisplay" style="margin-top: 10px; font-weight: bold; color: #555; font-size: 13px;">Average Rating: Loading...</div>
+    </div>
+
+    <div class="post-card">
+        <textarea id="postContent" rows="3" placeholder="ဘာတွေ မျှဝေချင်ပါသလဲ..."></textarea>
+        <button class="btn-post" onclick="handlePost()">Post တင်မည်</button>
+    </div>
+
+    <div id="newsFeed"></div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03U", 
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    const ADMIN_EMAIL = "uwinkyawdevelopbusinessco@gmail.com";
+    const DEV_PASS = "Win197819781978kyawmyint"; 
+
+    let userName = localStorage.getItem("health_user_name");
+    if (!userName) {
+        userName = prompt("ကျေးဇူးပြု၍ သင့်နာမည်ကို ရိုက်ထည့်ပါ:") || "Anonymous User";
+        localStorage.setItem("health_user_name", userName);
+    }
+    document.getElementById('userNameDisplay').innerText = "Logged in as: " + userName;
+
+    async function adminLogin() {
+        try {
+            const result = await auth.signInWithPopup(provider);
+            if(result.user.email === ADMIN_EMAIL) {
+                alert("Welcome Admin! You can now Pin/Delete posts.");
+                document.getElementById('adminLoginBtn').innerText = "Admin: ON ✅";
+            } else {
+                alert("This account is not authorized as Admin.");
+                await auth.signOut();
+            }
+        } catch (e) { alert("Login Error: " + e.message); }
+    }
+
+    let selectedRating = 0;
+    function setRating(n) {
+        selectedRating = n;
+        document.querySelectorAll('#ratingStars span').forEach((s, i) => s.style.color = i < n ? "#ffc107" : "#ddd");
+    }
+
+    async function submitFeedback() {
+        const text = document.getElementById('feedbackText').value.trim();
+        if (selectedRating === 0 || !text) return alert("ဖြည့်စွက်ပေးပါဦး");
+        try {
+            await db.collection("app_feedback").add({ rating: selectedRating, createdAt: Date.now() });
+            await db.collection("health_posts").add({
+                author: userName, text: `[Rating: ${"⭐".repeat(selectedRating)}]\n${text}`,
+                likes: 0, hahas: 0, comments: [], isPinned: false, createdAt: Date.now()
+            });
+            alert("Sent!");
+            document.getElementById('feedbackText').value = ""; setRating(0);
+        } catch(e) { alert(e.message); }
+    }
+
+    db.collection("app_feedback").onSnapshot(snap => {
+        let total = 0; snap.forEach(doc => total += doc.data().rating);
+        document.getElementById('averageRatingDisplay').innerText = snap.size === 0 ? "No ratings" : `Average: ${(total / snap.size).toFixed(1)} ⭐ (${snap.size} reviews)`;
+    });
+
+    // --- ဒီနေရာမှာ အဟောင်းကို ဖြတ်ပြီး အသစ်နဲ့ အစားထိုးပါ ---
+async function handlePost() {
+    const text = document.getElementById('postContent').value.trim();
+    if(!text) return;
+    await db.collection("health_posts").add({ 
+        author: userName, 
+        text, 
+        likes: 0, 
+        hahas: 0, 
+        comments: [], 
+        isPinned: false, 
+        admin_pw: "", // Admin က ဖျက်နိုင်ဖို့ အကွက်ချန်ထားခြင်း
+        createdAt: Date.now() 
+    });
+    document.getElementById('postContent').value = "";
+}
+
+
+    // --- React Logic with Haha System ---
+    async function react(id, type, commentId = null) {
+        const docRef = db.collection("health_posts").doc(id);
+        const doc = await docRef.get();
+        if (commentId) {
+            const updated = doc.data().comments.map(c => { 
+                if(c.id === commentId) c[type] = (c[type] || 0) + 1; 
+                return c; 
+            });
+            await docRef.update({ comments: updated });
+        } else { 
+            await docRef.update({ [type]: firebase.firestore.FieldValue.increment(1) }); 
+        }
+    }
+
+    async function addComment(id) {
+        const input = document.getElementById(`in-${id}`);
+        if(!input.value.trim()) return;
+        await db.collection("health_posts").doc(id).update({ comments: firebase.firestore.FieldValue.arrayUnion({ id: Date.now().toString(), author: userName, text: input.value, likes: 0, hahas: 0 }) });
+        input.value = "";
+    }
+
+    async function deleteItem(postId, commentId = null) {
+        if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) return alert("Please Login as Admin first!");
+        if (!confirm("Are you sure you want to delete?")) return;
+
+        try {
+            const docRef = db.collection("health_posts").doc(postId);
+            if (commentId) {
+                const doc = await docRef.get();
+                const filtered = doc.data().comments.filter(c => c.id !== commentId);
+                await docRef.update({ comments: filtered, admin_pw: DEV_PASS });
+            } else {
+                await docRef.update({ admin_pw: DEV_PASS }); 
+                await docRef.delete();
+            }
+        } catch(e) { alert("Error: Make sure you are logged in as Admin."); }
+    }
+
+    async function togglePin(id, status) {
+        if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) return alert("Please Login as Admin first!");
+        try {
+            await db.collection("health_posts").doc(id).update({ isPinned: !status, admin_pw: DEV_PASS });
+        } catch(e) { alert(e.message); }
+    }
+
+    db.collection("health_posts").orderBy("isPinned", "desc").orderBy("createdAt", "desc").onSnapshot(snap => {
+        const feed = document.getElementById('newsFeed'); feed.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data(); const id = doc.id;
+            const cList = (d.comments || []).map(c => `
+                <div class="comment-item">
+                    <div style="display:flex; justify-content:space-between;"><strong>${c.author}</strong><span class="del-btn" onclick="deleteItem('${id}', '${c.id}')">🗑️</span></div>
+                    <p>${c.text}</p>
+                    <div style="font-size:11px;">
+                        <span onclick="react('${id}', 'likes', '${c.id}')" style="cursor:pointer;">👍 ${c.likes || 0}</span>
+                        <span onclick="react('${id}', 'hahas', '${c.id}')" style="cursor:pointer; margin-left:10px;">😆 ${c.hahas || 0}</span>
+                    </div>
+                </div>`).join('');
+            feed.innerHTML += `
+                <div class="feed-card ${d.isPinned ? 'pinned' : ''}">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong style="color:var(--primary);">${d.isPinned ? '📌 PINNED' : (d.author || 'User')}</strong>
+                        <div><span class="pin-btn" onclick="togglePin('${id}', ${d.isPinned})">📍 Pin</span><span class="del-btn" onclick="deleteItem('${id}')">🗑️</span></div>
+                    </div>
+                    <p style="white-space:pre-wrap; margin:10px 0;">${d.text}</p>
+                    <div class="action-bar">
+                        <button class="action-btn" onclick="react('${id}', 'likes')">👍 Like (${d.likes || 0})</button>
+                        <button class="action-btn" onclick="react('${id}', 'hahas')">😆 Haha (${d.hahas || 0})</button>
+                    </div>
+                    <div class="comment-section">${cList}<div class="comment-input-box"><input type="text" id="in-${id}" class="comment-input"><button onclick="addComment('${id}')" style="border:none; background:none; color:purple; font-weight:bold;">Send</button></div></div>
+                </div>`;
+        });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  :root {
+    --bg-red: #d32f2f;
+    --white: #ffffff;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f4f4f4;
+  }
+
+  .app-icon {
+    width: 150px;
+    height: 150px;
+    background: linear-gradient(145deg, #ff4b2b, #d32f2f);
+    border-radius: 35px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 15px 30px rgba(211, 47, 47, 0.4);
+    position: relative;
+  }
+
+  .logo-container {
+    width: 100px;
+    height: 100px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* ဘေးတိုင်နှစ်ခု - အလယ်တန်းက ဖောက်ထွက်မှာဖြစ်လို့ နေရာချထားမှု ပြောင်းလဲထားသည် */
+  .side-bar {
+    width: 22px;
+    height: 85px;
+    background: var(--white);
+    border-radius: 4px;
+    position: absolute;
+    box-shadow: 2px 4px 8px rgba(0,0,0,0.2);
+    z-index: 1; /* အလယ်တန်းရဲ့ နောက်မှာ ထားရန် */
+  }
+
+  .left { left: 20px; }
+  .right { right: 20px; }
+
+  /* အလယ်ဖြတ်တန်း - ဘေးတိုင်များကို ကျော်ပြီး ဖောက်ထွက်သွားစေရန် */
+  .middle-bar {
+    width: 95px; /* ဘေးတိုင်များထက် ပိုရှည်အောင် ထားသည် */
+    height: 55px; /* ပိုထူစေရန် အမြင့်ကို တိုးထားသည် */
+    background: linear-gradient(to bottom, #ffffff, #f0f0f0);
+    border-radius: 6px;
+    position: absolute;
+    z-index: 2; /* အပေါ်က ထပ်နေစေရန် */
+    box-shadow: 0 6px 12px rgba(0,0,0,0.3), 
+                inset 0 2px 4px rgba(255,255,255,0.8);
+  }
+
+</style>
+</head>
+<body>
+
+  <div class="app-icon">
+    <div class="logo-container">
+      <div class="side-bar left"></div>
+      <div class="middle-bar"></div>
+      <div class="side-bar right"></div>
+    </div>
+  </div>
+
+</body>
+</html>
+
+
