@@ -160,42 +160,32 @@
 };
   firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+async function sendToFirestore() {
+    const text = document.getElementById('feedbackText').value.trim();
+    const rating = document.querySelector('input[name="rating"]:checked')?.value || 0;
 
-    async function sendToFirestore() {
-        const stars = document.querySelector('input[name="rating"]:checked');
-        const ratingValue = stars ? stars.value : "No Rating";
-        const feedback = document.getElementById("feedbackText").value.trim();
-        const btn = document.querySelector('.submit-btn');
+    if (!text) return alert("စာရိုက်ပေးပါဦး");
 
-        if(!feedback) return alert("စာလေးရေးပေးပါဦး Senior");
+    try {
+        // အခုလက်ရှိ အလုပ်လုပ်နေတဲ့ health_posts ထဲကိုပဲ Rating ပါ ပေါင်းထည့်လိုက်တာပါ
+        await db.collection("health_posts").add({
+            author: userName || "Anonymous User",
+            // စာသားထဲမှာ Rating ကြယ်လေးတွေပါ တစ်ခါတည်း ထည့်လိုက်ပါမယ်
+            text: `[Rating: ${"⭐".repeat(rating)}]\n${text}`, 
+            likes: 0,
+            hahas: 0,
+            comments: [],
+            isPinned: false,
+            createdAt: Date.now()
+        });
 
-        btn.innerText = "ပို့နေသည်...";
-        btn.disabled = true;
-
-        try {
-            // User.html ကသုံးတဲ့ 'health_posts' ထဲကို ပို့တာဖြစ်လို့ အဲဒီမှာ တစ်ခါတည်း သွားပေါ်မှာပါ
-            await db.collection("health_posts").add({
-                text: `[Feedback Rating: ${ratingValue}]\n${feedback}`,
-                likes: 0,
-                hahas: 0,
-                comments: [],
-                createdAt: Date.now()
-            });
-
-            alert("ကျေးဇူးတင်ပါတယ်! Feedback ကို Community Feed (Users Page) သို့ ပို့ပြီးပါပြီ။");
-            document.getElementById("feedbackText").value = "";
-            if(stars) stars.checked = false;
-        } catch (e) {
-            alert("အမှားတစ်ခု ရှိနေပါတယ် Senior!");
-            console.error(e);
-        } finally {
-            btn.innerText = "ပို့မည်";
-            btn.disabled = false;
-        }
-    }
-
+        alert("Feedback ကို Community Feed သို့ ပို့ပြီးပါပြီ။");
+        window.location.href = "user.html"; 
+    } catch (e) {
+        alert("Error: " + e.message);
     function unmuteVideo() {
-        const video = document.getElementById("mainVideo");
+    
+                                                            const video = document.getElementById("mainVideo");
         const overlay = document.getElementById("global-overlay");
         video.muted = false;
         overlay.style.display = "none";
