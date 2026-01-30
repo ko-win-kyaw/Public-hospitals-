@@ -26,6 +26,11 @@
         .comment-item { background: white; border-radius: 10px; padding: 8px; margin-bottom: 5px; font-size: 13px; border: 1px solid #eee; }
         .comment-input-box { display: flex; gap: 5px; margin-top: 10px; }
         .comment-input { flex: 1; border-radius: 20px; border: 1px solid #ddd; padding: 6px 12px; outline: none; }
+        
+        /* Rating Display Style */
+        .rating-stat-box { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; text-align: center; border: 1px solid #ddd; }
+        .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 10px; }
+        .stat-item { font-size: 12px; background: #f8f9fa; padding: 5px; border-radius: 5px; border: 1px solid #eee; }
     </style>
 </head>
 <body>
@@ -42,14 +47,25 @@
 </div>
 
 <div class="container">
+    <div class="rating-stat-box">
+        <h4 style="margin: 0 0 10px 0; color: var(--primary);">Overall App Rating</h4>
+        <div id="averageRatingDisplay" style="font-size: 24px; font-weight: bold; color: #333;">⭐ Loading...</div>
+        <div class="stat-grid" id="ratingCounts">
+            <div class="stat-item">5⭐: <span id="c5">0</span></div>
+            <div class="stat-item">4⭐: <span id="c4">0</span></div>
+            <div class="stat-item">3⭐: <span id="c3">0</span></div>
+            <div class="stat-item">2⭐: <span id="c2">0</span></div>
+            <div class="stat-item">1⭐: <span id="c1">0</span></div>
+        </div>
+    </div>
+
     <div class="post-card">
-        <h3 style="color: var(--primary); margin: 0 0 10px 0;">App Feedback & Rating</h3>
-        <div id="ratingStars" style="font-size: 35px; color: #ddd; cursor: pointer; margin-bottom: 10px; display: flex; gap: 5px;">
+        <h3 style="color: var(--primary); margin: 0 0 10px 0;">Rate this App</h3>
+        <div id="ratingStars" style="font-size: 35px; color: #ddd; cursor: pointer; margin-bottom: 10px; display: flex; gap: 5px; justify-content: center;">
             <span onclick="setRating(1)">⭐</span><span onclick="setRating(2)">⭐</span><span onclick="setRating(3)">⭐</span><span onclick="setRating(4)">⭐</span><span onclick="setRating(5)">⭐</span>
         </div>
         <textarea id="feedbackText" rows="2" placeholder="ဒီ App အပေါ် သင့်အမြင်ကို ရေးပေးပါ..."></textarea>
         <button class="btn-post" onclick="submitFeedback()">Feedback ပေးမည်</button>
-        <div id="averageRatingDisplay" style="margin-top: 10px; font-weight: bold; color: #555; font-size: 13px;">Average Rating: Loading...</div>
     </div>
 
     <div class="post-card">
@@ -62,15 +78,14 @@
 
 <script>
     const firebaseConfig = {
-  apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
-  authDomain: "hospital-app-caf85.firebaseapp.com",
-  projectId: "hospital-app-caf85",
-  storageBucket: "hospital-app-caf85.firebasestorage.app",
-  messagingSenderId: "736486429191",
-  appId: "1:736486429191:web:25c116beb3994d213cd0a2",
-  measurementId: "G-G2ZW22W3BM"
-};
-
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2",
+        measurementId: "G-G2ZW22W3BM"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -90,13 +105,13 @@
         try {
             const result = await auth.signInWithPopup(provider);
             if(result.user.email === ADMIN_EMAIL) {
-                alert("Welcome Admin! You can now Pin/Delete posts.");
+                alert("Welcome Admin!");
                 document.getElementById('adminLoginBtn').innerText = "Admin: ON ✅";
             } else {
-                alert("This account is not authorized as Admin.");
+                alert("Access Denied.");
                 await auth.signOut();
             }
-        } catch (e) { alert("Login Error: " + e.message); }
+        } catch (e) { alert(e.message); }
     }
 
     let selectedRating = 0;
@@ -107,42 +122,48 @@
 
     async function submitFeedback() {
         const text = document.getElementById('feedbackText').value.trim();
-        if (selectedRating === 0 || !text) return alert("ဖြည့်စွက်ပေးပါဦး");
+        if (selectedRating === 0 || !text) return alert("ကြယ်ပွင့်နှင့် စာသား ဖြည့်စွက်ပေးပါ");
         try {
             await db.collection("app_feedback").add({ rating: selectedRating, createdAt: Date.now() });
             await db.collection("health_posts").add({
-                author: userName, text: `[Rating: ${"⭐".repeat(selectedRating)}]\n${text}`,
+                author: userName, 
+                text: `[Rating: ${"⭐".repeat(selectedRating)}]\n${text}`,
                 likes: 0, hahas: 0, comments: [], isPinned: false, createdAt: Date.now()
             });
-            alert("Sent!");
+            alert("Feedback ပေးပို့ပြီးပါပြီ!");
             document.getElementById('feedbackText').value = ""; setRating(0);
         } catch(e) { alert(e.message); }
     }
 
+    // Real-time Rating Update Logic
     db.collection("app_feedback").onSnapshot(snap => {
-        let total = 0; snap.forEach(doc => total += doc.data().rating);
-        document.getElementById('averageRatingDisplay').innerText = snap.size === 0 ? "No ratings" : `Average: ${(total / snap.size).toFixed(1)} ⭐ (${snap.size} reviews)`;
+        let total = 0;
+        let counts = {1:0, 2:0, 3:0, 4:0, 5:0};
+        
+        snap.forEach(doc => {
+            const r = doc.data().rating;
+            total += r;
+            if(counts[r] !== undefined) counts[r]++;
+        });
+
+        const avg = snap.size === 0 ? "0.0" : (total / snap.size).toFixed(1);
+        document.getElementById('averageRatingDisplay').innerText = `⭐ ${avg} / 5.0`;
+        
+        // Update Grid Counts
+        for(let i=1; i<=5; i++) {
+            document.getElementById(`c${i}`).innerText = counts[i];
+        }
     });
 
-    // --- ဒီနေရာမှာ အဟောင်းကို ဖြတ်ပြီး အသစ်နဲ့ အစားထိုးပါ ---
-async function handlePost() {
-    const text = document.getElementById('postContent').value.trim();
-    if(!text) return;
-    await db.collection("health_posts").add({ 
-        author: userName, 
-        text, 
-        likes: 0, 
-        hahas: 0, 
-        comments: [], 
-        isPinned: false, 
-        admin_pw: "", // Admin က ဖျက်နိုင်ဖို့ အကွက်ချန်ထားခြင်း
-        createdAt: Date.now() 
-    });
-    document.getElementById('postContent').value = "";
-}
+    async function handlePost() {
+        const text = document.getElementById('postContent').value.trim();
+        if(!text) return;
+        await db.collection("health_posts").add({ 
+            author: userName, text, likes: 0, hahas: 0, comments: [], isPinned: false, createdAt: Date.now() 
+        });
+        document.getElementById('postContent').value = "";
+    }
 
-
-    // --- React Logic with Haha System ---
     async function react(id, type, commentId = null) {
         const docRef = db.collection("health_posts").doc(id);
         const doc = await docRef.get();
@@ -165,28 +186,22 @@ async function handlePost() {
     }
 
     async function deleteItem(postId, commentId = null) {
-    if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) return alert("Please Login as Admin first!");
-    if (!confirm("Are you sure you want to delete?")) return;
+        if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) return alert("Admin Login Required");
+        if (!confirm("Delete this?")) return;
+        try {
+            const docRef = db.collection("health_posts").doc(postId);
+            if (commentId) {
+                const doc = await docRef.get();
+                const filtered = doc.data().comments.filter(c => c.id !== commentId);
+                await docRef.update({ comments: filtered });
+            } else { await docRef.delete(); }
+        } catch(e) { alert(e.message); }
+    }
 
-    try {
-        const docRef = db.collection("health_posts").doc(postId);
-        if (commentId) {
-            const doc = await docRef.get();
-            const filtered = doc.data().comments.filter(c => c.id !== commentId);
-            await docRef.update({ comments: filtered }); // admin_pw ဖြုတ်လိုက်သည်
-        } else {
-            await docRef.delete(); // admin_pw ဖြုတ်လိုက်သည်
-        }
-    } catch(e) { alert("Error: " + e.message); }
-}
-
-async function togglePin(id, status) {
-    if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) return alert("Please Login as Admin first!");
-    try {
-        await db.collection("health_posts").doc(id).update({ isPinned: !status }); // admin_pw ဖြုတ်လိုက်သည်
-    } catch(e) { alert(e.message); }
-}
-
+    async function togglePin(id, status) {
+        if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) return alert("Admin Login Required");
+        await db.collection("health_posts").doc(id).update({ isPinned: !status });
+    }
 
     db.collection("health_posts").orderBy("isPinned", "desc").orderBy("createdAt", "desc").onSnapshot(snap => {
         const feed = document.getElementById('newsFeed'); feed.innerHTML = "";
@@ -218,5 +233,4 @@ async function togglePin(id, status) {
     });
 </script>
 </body>
-    </html>
-            
+</html>
