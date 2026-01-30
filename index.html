@@ -134,22 +134,22 @@
 <div class="feedback-section">
     <label style="font-weight: bold; font-size: 18px;">အဆင့်သတ်မှတ်ပေးရန် (Rating)</label>
     <div class="star-rating">
-        <input type="radio" name="rating" id="star5" value="5 Stars"><label for="star5">★</label>
-        <input type="radio" name="rating" id="star4" value="4 Stars"><label for="star4">★</label>
-        <input type="radio" name="rating" id="star3" value="3 Stars"><label for="star3">★</label>
-        <input type="radio" name="rating" id="star2" value="2 Stars"><label for="star2">★</label>
-        <input type="radio" name="rating" id="star1" value="1 Star"><label for="star1">★</label>
-    </div>
+    <input type="radio" name="rating" id="star5" value="5"><label for="star5">★</label>
+    <input type="radio" name="rating" id="star4" value="4"><label for="star4">★</label>
+    <input type="radio" name="rating" id="star3" value="3"><label for="star3">★</label>
+    <input type="radio" name="rating" id="star2" value="2"><label for="star2">★</label>
+    <input type="radio" name="rating" id="star1" value="1"><label for="star1">★</label>
+</div>
+
+
     <textarea id="feedbackText" placeholder="သင့်အကြံပြုချက်များကို ဤနေရာတွင် ရေးသားပါ..."></textarea>
     <button type="button" class="submit-btn" onclick="sendToFirestore()">ပို့မည်</button>
 </div>
 
 <footer class="notice">ကျန်းမာရေးအတွက် <strong>ဆေးရုံအမည်
 </strong>ကို နှိပ်ပြီး အသေးစိတ် ကြည့်ရှုနိုင်ပါသည်။</footer>
-
 <script>
-    // Firebase Configuration (Senior's Project)
-   const firebaseConfig = {
+    const firebaseConfig = {
   apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
   authDomain: "hospital-app-caf85.firebaseapp.com",
   projectId: "hospital-app-caf85",
@@ -158,9 +158,15 @@
   appId: "1:736486429191:web:25c116beb3994d213cd0a2",
   measurementId: "G-G2ZW22W3BM"
 };
-  firebase.initializeApp(firebaseConfig);
+
+
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-async function sendToFirestore() {
+
+    // User နာမည်ကို user.html မှာသိမ်းခဲ့တဲ့ memory ကနေပြန်ယူမယ်
+    const userName = localStorage.getItem("health_user_name") || "Anonymous User";
+
+   async function sendToFirestore() {
     const text = document.getElementById('feedbackText').value.trim();
     const rating = document.querySelector('input[name="rating"]:checked')?.value || 0;
 
@@ -183,14 +189,21 @@ async function sendToFirestore() {
         window.location.href = "user.html"; 
     } catch (e) {
         alert("Error: " + e.message);
+    }
+}
+
+
     function unmuteVideo() {
-    
-                                                            const video = document.getElementById("mainVideo");
+        const video = document.getElementById("mainVideo");
         const overlay = document.getElementById("global-overlay");
         video.muted = false;
         overlay.style.display = "none";
         video.play();
     }
 </script>
+
+
+
 </body>
-</html>
+    </html>
+            
