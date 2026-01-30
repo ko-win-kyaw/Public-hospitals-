@@ -61,7 +61,7 @@
 </div>
 
 <script>
-   const firebaseConfig = {
+    const firebaseConfig = {
   apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
   authDomain: "hospital-app-caf85.firebaseapp.com",
   projectId: "hospital-app-caf85",
@@ -70,6 +70,8 @@
   appId: "1:736486429191:web:25c116beb3994d213cd0a2",
   measurementId: "G-G2ZW22W3BM"
 };
+
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
@@ -163,28 +165,28 @@ async function handlePost() {
     }
 
     async function deleteItem(postId, commentId = null) {
-        if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) return alert("Please Login as Admin first!");
-        if (!confirm("Are you sure you want to delete?")) return;
+    if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) return alert("Please Login as Admin first!");
+    if (!confirm("Are you sure you want to delete?")) return;
 
-        try {
-            const docRef = db.collection("health_posts").doc(postId);
-            if (commentId) {
-                const doc = await docRef.get();
-                const filtered = doc.data().comments.filter(c => c.id !== commentId);
-                await docRef.update({ comments: filtered, admin_pw: DEV_PASS });
-            } else {
-                await docRef.update({ admin_pw: DEV_PASS }); 
-                await docRef.delete();
-            }
-        } catch(e) { alert("Error: Make sure you are logged in as Admin."); }
-    }
+    try {
+        const docRef = db.collection("health_posts").doc(postId);
+        if (commentId) {
+            const doc = await docRef.get();
+            const filtered = doc.data().comments.filter(c => c.id !== commentId);
+            await docRef.update({ comments: filtered }); // admin_pw ဖြုတ်လိုက်သည်
+        } else {
+            await docRef.delete(); // admin_pw ဖြုတ်လိုက်သည်
+        }
+    } catch(e) { alert("Error: " + e.message); }
+}
 
-    async function togglePin(id, status) {
-        if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) return alert("Please Login as Admin first!");
-        try {
-            await db.collection("health_posts").doc(id).update({ isPinned: !status, admin_pw: DEV_PASS });
-        } catch(e) { alert(e.message); }
-    }
+async function togglePin(id, status) {
+    if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) return alert("Please Login as Admin first!");
+    try {
+        await db.collection("health_posts").doc(id).update({ isPinned: !status }); // admin_pw ဖြုတ်လိုက်သည်
+    } catch(e) { alert(e.message); }
+}
+
 
     db.collection("health_posts").orderBy("isPinned", "desc").orderBy("createdAt", "desc").onSnapshot(snap => {
         const feed = document.getElementById('newsFeed'); feed.innerHTML = "";
@@ -216,4 +218,5 @@ async function handlePost() {
     });
 </script>
 </body>
-</html>
+    </html>
+            
