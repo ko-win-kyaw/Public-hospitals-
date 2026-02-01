@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Eye Hospital</title>
+    <title>Eye Hospital & Emergency Contacts</title>
     <style>
         body { 
             margin: 0; 
@@ -12,7 +12,7 @@
             background: #f4f7f6; 
         }
 
-        /* လေယာဉ် Animation */
+        /* Ambulance/Plane Animation */
         .ambulance-run {
             position: fixed;
             top: 0;
@@ -20,7 +20,7 @@
             z-index: 9999;
             font-size: 60px;
             pointer-events: none;
-            display: none; /* အစမှာ ဖျောက်ထားမည် */
+            display: none; 
             animation: driveFast 2.5s ease-in infinite;
             user-select: none;
         }
@@ -45,8 +45,8 @@
         .marquee-container { 
             background: red; 
             color: white; 
-            padding: 0; 
-            height: 30px;
+            padding: 5px 0; 
+            height: auto;
             display: flex;
             align-items: center;
         }
@@ -63,7 +63,6 @@
             width: 100%; 
             height: 100%; 
             object-fit: cover; 
-            pointer-events: none; 
             display: block;
         }
 
@@ -83,7 +82,7 @@
             background: white;
             padding: 30px;
             border-radius: 25px;
-            width: 80%;
+            width: 85%;
             max-width: 320px;
             text-align: center;
         }
@@ -103,19 +102,29 @@
 
         .buy-btn {
             position: absolute; top: 10px; left: 10px; z-index: 1100;
-            padding: 4px 10px; background: #28a745; color: white;
+            padding: 4px 12px; background: #28a745; color: white;
             text-decoration: none; border-radius: 50px; font-size: 12px;
             border: 2px solid white; font-weight: bold;
         }
 
-        .page { padding: 10px; }
-        table { width:100%; border-collapse: collapse; margin-top:15px; background: white; }
-        th, td { padding:12px; border:1px solid #dee2e6; font-size: 14px; text-align: center; }
-        .emergency-contact-box { padding: 15px; background: #fff; border-radius: 15px; margin: 15px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .call-btn { display: flex; justify-content: space-between; align-items: center; padding: 15px; margin-bottom: 10px; text-decoration: none; border-radius: 10px; color: white; }
+        .page { padding: 15px; }
+        
+        table { width:100%; border-collapse: collapse; margin-top:15px; background: white; border-radius: 10px; overflow: hidden; }
+        th, td { padding:12px; border:1px solid #dee2e6; font-size: 14px; text-align: left; }
+        th { background-color: #f8f9fa; color: #333; }
+
+        .emergency-contact-box { padding: 15px; background: #fff; border-radius: 15px; margin: 20px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .call-btn { display: flex; justify-content: space-between; align-items: center; padding: 15px; margin-bottom: 10px; text-decoration: none; border-radius: 10px; color: white; font-weight: bold; }
+        
         .fire { background-color: #e67e22; }
         .ambulance { background-color: #e74c3c; }
         .police { background-color: #3498db; }
+        
+        .back-btn { 
+            display: block; width: 60%; margin: 20px auto; padding: 12px; 
+            background: #6c757d; color: white; text-align: center; 
+            text-decoration: none; border-radius: 8px; font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -128,153 +137,94 @@
     </div>
 </div>
 
-<span class="ambulance-run" id="planeAnim">
-  ☀️
-</span>
+<span class="ambulance-run" id="planeAnim">☀️</span>
 
 <div class="fixed-header">
     <div class="marquee-container">
-        <marquee scrollamount="5" style="margin:0;">🚑..ပရဟိတမျက်စိခွဲစိပ်ခန်းများ
-        ✚</marquee>
+        <marquee scrollamount="5">🚑..ပရဟိတမျက်စိခွဲစိပ်ခန်းများ ✚ </marquee>
     </div>
     <div class="video-wrapper">
-        <a href="tel:09675990009" class="buy-btn">ဝယ်မည်</a>
-        <video id="myVideo" muted loop playsinline autoplay>
+        <a href="tel:09675990009" class="buy-btn">ဆက်သွယ်ရန်</a>
+        <video id="myVideo" muted loop playsinline>
             <source src="https://www.dropbox.com/scl/fi/7iwylwrzkozn36ys0pfew/h3.mp4?rlkey=efngp1xn63ayhyyyy92kaczlg&st=6bfhhzn8&raw=1" type="video/mp4">
         </video>
     </div>
 </div>
 
 <section class="page">
-    <div style="background:linear-gradient(45deg, #007bff, #00d4ff); color:white; padding:30px; border-radius:15px; text-align:center; margin-bottom:20px;">
-        <h1 style="margin:0;">🏥 အခမဲ့မျက်စိခွဲစိပ် ဆေးခန်းများ
-        </h1>
-        <p style="margin:5px 0 0 0;">လူသားအားလုံးအလင်းရဖို့ အစဉ်တစိုက် ကြိုးပမ်းစို့။</p>
+    <div style="background:linear-gradient(45deg, #007bff, #00d4ff); color:white; padding:25px; border-radius:15px; text-align:center; margin-bottom:20px;">
+        <h1 style="margin:0; font-size: 30px;">🏥 အခမဲ့မျက်စိခွဲစိပ် ဆေးခန်းများ</h1>
+        <p style="margin:10px 0 0 0; font-size: 14px;">လူသားအားလုံးအလင်းရဖို့ အစဉ်တစိုက် ကြိုးပမ်းစို့။</p>
     </div>
 
-    <div style="background-color: #ff4; text-align: center; padding: 10px; border-radius: 10px; font-weight: bold;"> ဖုန်းနံပါတ်များဖြင့် ဆက်သွယ်ပြီး မျက်စိစမ်းသပ်ရက် မျက်လုံးခွဲရက်များ ကြိုတင်ရယူရ ပါသည်။
+    <div style="background-color: #fff9c4; text-align: center; padding: 12px; border-radius: 10px; font-weight: bold; border: 1px solid #fbc02d; font-size: 14px; color: #333;"> 
+        💡 ဖုန်းနံပါတ်များဖြင့် ဆက်သွယ်ပြီး မျက်စိစမ်းသပ်ရက်နှင့် ခွဲစိတ်ရက်များ ကြိုတင်ရယူပေးပါ။
     </div>
 
-    <div class="card" style="background:white; border-radius:12px; padding:0px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
-        <h3 style="color:#007bff; text-align: center ;margin-bottom:-10px;">📅 ပြင်ပလူနာဌာန နေ့ရက်အချိန်းဇယား</h3>
+    <div style="margin-top: 20px;">
+        <h3 style="color:#007bff; text-align: center;">📅 ဆေးခန်းတည်နေရာနှင့် လမ်းညွှန်</h3>
         <div style="overflow-x:auto;">
-            <table style="width:100%; border-collapse: collapse; margin-top:15px; text-align: center;">
+            <table>
                 <thead>
-                    <tr style="background:#e9ecef; text-align: center;">
-                        <th style="padding:12px; border:1px solid #dee2e6;">
-            လိပ်စာ-တည်နေရာ                
-                        </th>
-                        <th style="padding:12px; border:1px solid #dee2e6;">
-              လမ်းညွှန်              
-                        </th>
+                    <tr>
+                        <th>လိပ်စာ-တည်နေရာ</th>
+                        <th>ဆက်သွယ်ရန်/လမ်းညွှန်</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td style="padding:12px; border:1px solid #dee2e6;">
-      သီတဂူ ရွှေပြည်ဟိန်း မျက်စိခွဲစိပ်ဆေးခန်း။သာယာရွှေပြည်အိမ်ရာ။ သာယာရွှေပြည်လမ်း။ရွှေပြည်ဟိန်းဆေးရုံ။။
-      </td>
-                        <td style="padding:12px; border:1px solid #dee2e6;">
-             01541493 ☎️
-             YBS 🚌 3,   7, 13, 18, 24,  62, 111, 112, 113, 128
-             များစီးပါ။
-            </td>
-                    </tr>
-
-          <tr style="background:#e9ecef; text-align: center;">
-                        <th style="padding:12px; border:1px solid #dee2e6;"> 
-             သီတဂူဗုဒ္ဓ တက္ကသိုလ်
-             နာရီစင်မှတ်တိုင်၊ အမှတ် ၁၀ ၊ပင်လုံလမ်း ၊ ၃၃ ရပ်ကွက်၊ မြောက်ဒဂုံမြို့နယ်။</th>
-                        <th style="padding:12px; border:1px solid #dee2e6;">☎️ ဆက်သွယ်ရမည့်ဖုန်း-09457771313
-                        YBS 🚌 12, 13, 26, 29, 28, 30, 87, 88, 99, 117, 128, 139 စီးပါ။</th>
-                    </tr>
-                         <tr style="background:#e9ecef; text-align: center;">
-                        <th style="padding:12px; border:1px solid #dee2e6;"> အခြေစိုက်မြို့နယ်</th>
-                        <th style="padding:12px; border:1px solid #dee2e6;">☎️ ဆက်သွယ်ရမည့်ဖုန်း </th>
+                        <td>သီတဂူ ရွှေပြည်ဟိန်း မျက်စိဆေးခန်း။ သာယာရွှေပြည်လမ်း၊ မြောက်ဒဂုံ။</td>
+                        <td>☎️ 01541493<br>🚌 YBS: 3, 7, 13, 18, 24, 62, 111, 112, 113, 128</td>
                     </tr>
                     <tr>
-                      
-                    <tr>
-                        <td style="padding:12px; border:1px solid #dee2e6;">
-          ရွှေပြည်သာမြို့နယ်
-          (ကယ်ဆယ်ရေးမီးသတ်ကားနှင့် လူနာတင်ယဉ်)
-          </td>
-                        <td style="padding:12px; border:1px solid #dee2e6;">09 444 946 665, 09 4210 251 24
-            </td>
+                        <td>သီတဂူဗုဒ္ဓ တက္ကသိုလ်၊ ပင်လုံလမ်း၊ ၃၃ ရပ်ကွက်၊ မြောက်ဒဂုံ။</td>
+                        <td>☎️ 09457771313<br>🚌 YBS: 12, 13, 26, 28, 29, 30, 87, 88, 99, 117, 128, 139</td>
                     </tr>
-                    <tr style="background:#f8f9fa;">
-                        <td style="padding:12px; border:1px solid #dee2e6;">လှိုင်သာယာမြို့နယ်(ကယ်ဆယ်ရေးမီးသတ်ကားနှင့် လူနာတင်ယဉ်)</td>
-                        <td style="padding:12px; border:1px solid #dee2e6;">
-                            09 250 166 391 , 09 777 444 955, 09 448498612-(T Rescue ကယ်ဆယ်ရေးမီးသတ်ကား),09 764 557 191, 09 952 553 054
-</td>
-                    </tr>                    <tr style="background:#f8f9fa;">
-                       <td style="padding:12px;border: 1px solid whitesmoke;">
-တောင်ဥက္ကလာပမြို့နယ်
-လူနာတင်ယဉ်
-</td>
-                        <td style="padding:12px; border:1px solid #dee2e6;">09 447 222 929, 09 447 222 727</td>
-                    </tr>
-                                      <tr>
-                        <td style="padding:12px; border:1px solid #dee2e6;">
-          သင်္ကန်းကျွန်းမြို့နယ် လူနာတင်ယဉ်
-          </td>
-                        <td style="padding:12px; border:1px solid #dee2e6;"> 09 772 988 251, 09 686 165 321
-            </td>
-                    </tr>
-                    <tr style="background:#f8f9fa;">
-                        <td style="padding:12px; border:1px solid #dee2e6;"> ရန်ကုန်မြို့ထဲ(မြို့တွင်း)
-                        </td>
-                        <td style="padding:12px; border:1px solid #dee2e6;">09 503 5296, 09 430 231 47</td>
-                    </tr>                        <tr style="background:#f8f9fa;">
-                        <td style="padding:12px; border:1px solid #dee2e6;">
-                            အင်းစိန်(ရွာမ)
-                        </td>
-                        <td style="padding:12px; border:1px solid #dee2e6;">09 420 294 524, 09 423 678 881</td>
-                    </tr>
-                           <tr style="background:#f8f9fa;">
-                       <td style="padding:12px;border: 1px solid whitesmoke;">
-တွံတေး
-မြို့နယ်
-လူနာတင်ယဉ်၊ ကယ်ဆယ်ရေးယဉ်
-</td>
-                        <td style="padding:12px; border:1px solid #dee2e6;">09 448 023 533, 09 31119537
-
-                        </td>
-                    </tr>
-                        
-         </tbody>
+                </tbody>
             </table>
         </div>
     </div>
-        <div style="font-size: 20px;color: blue;text-align: center; margin: 25px;">
 
     <div class="emergency-contact-box">
-    <h3 style="color: #d63031; text-align: center;">🆘 အရေးပေါ် ခေါ်ဆိုရန်
-    </h3>
-    
-    <a href="tel:01541493" class="call-btn fire">
-        <span>🏥ရွှေပြည်ဟိန်း
-        </span>
-        <strong>01541493</strong>
-    </a>
+        <h3 style="color: #d63031; text-align: center; margin-top: 0;">🆘 အရေးပေါ် လူနာတင်ယာဉ်များ</h3>
+        
+        <table style="margin-top: 0;">
+            <thead>
+                <tr>
+                    <th>မြို့နယ်</th>
+                    <th>ဖုန်းနံပါတ်</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>ရွှေပြည်သာ</td><td>09 444 946 665, 09 4210 251 24</td></tr>
+                <tr style="background:#f8f9fa;"><td>လှိုင်သာယာ</td><td>09 250 166 391, 09 777 444 955</td></tr>
+                <tr><td>တောင်ဥက္ကလာ</td><td>09 447 222 929, 09 447 222 727</td></tr>
+                <tr style="background:#f8f9fa;"><td>သင်္ကန်းကျွန်း</td><td>09 772 988 251, 09 686 165 321</td></tr>
+                <tr><td>မြို့တွင်း</td><td>09 503 5296, 09 430 231 47</td></tr>
+                <tr style="background:#f8f9fa;"><td>အင်းစိန်</td><td>09 420 294 524, 09 423 678 881</td></tr>
+                <tr><td>တွံတေး</td><td>09 448 023 533, 09 31119537</td></tr>
+            </tbody>
+        </table>
 
-    <a href="tel:09457771313" class="call-btn ambulance">
-        <span>🏥သီတဂူ </span>
-        <strong>09457771313</strong>
-    </a>
-
-    <a href="tel:191" class="call-btn police">
-        <span>🚒</span>
-        <strong>191</strong>
-    </a>Website သုံးသူများသာ ဖုန်းတန်းခေါ်နိုင်မည်။
-</div>
-<div style="text-align: center;">
-<a href="index.html" class="back-btn">
-
-    <button onclick="showPage('homePage')" style=" background:#6c757d; border:none; color:white; padding:12px; border-radius:8px; width:50%;"> 🏠ပြန်ရန်</button></a>
-
+        <div style="margin-top: 20px;">
+            <a href="tel:01541493" class="call-btn fire">
+                <span>🏥 ရွှေပြည်ဟိန်း</span>
+                <strong>01541493</strong>
+            </a>
+            <a href="tel:09457771313" class="call-btn ambulance">
+                <span>🏥 သီတဂူ</span>
+                <strong>09457771313</strong>
+            </a>
+            <a href="tel:191" class="call-btn police">
+                <span>🚒 မီးသတ်ဌာန</span>
+                <strong>191</strong>
+            </a>
+            <p style="text-align: center; font-size: 12px; color: #666;">*Website သုံမှသာတိုက်ရိုက်ခေါ်ဆိုနိုင်ပါသည်။</p>
+        </div>
     </div>
-    </section>
+
+    <a href="index.html" class="back-btn">🏠 ပင်မစာမျက်နှာသို့</a>
+</section>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -283,12 +233,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const overlay = document.getElementById('welcomeOverlay');
     const plane = document.getElementById('planeAnim');
 
-    // ခလုတ်နှိပ်သည့်အခါ လုပ်ဆောင်ချက်
     startBtn.addEventListener('click', function() {
         video.muted = false; 
-        video.play();
-        overlay.style.display = 'none'; // Overlay ပိတ်မည်
-        plane.style.display = 'inline-block'; // လေယာဉ် Animation စတင်မည်
+        video.play().catch(e => console.log("Video play error:", e));
+        overlay.style.display = 'none'; 
+        plane.style.display = 'inline-block'; 
     });
 });
 </script>
