@@ -1,21 +1,22 @@
-// ၁။ Firebase Configuration (သင့်ရဲ့ Keys များ)
+Firebase ep Firebase Configuration (Senior ပေးထားသော Key များ)
 const firebaseConfig = {
-    apiKey: "AIzaSyC0Elue59dRMSdQp5xyoZbVgIw9b9gqZBc",
-    authDomain: "emotionn-app.firebaseapp.com",
-    databaseURL: "https://emotionn-app-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "emotionn-app",
-    storageBucket: "emotionn-app.appspot.com",
-    messagingSenderId: "998666452056",
-    appId: "1:998666452056:web:9a560311fa0814586c9e2d"
+    apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U", 
+    authDomain: "hospital-app-caf85.firebaseapp.com",
+    projectId: "hospital-app-caf85",
+    storageBucket: "hospital-app-caf85.firebasestorage.app",
+    messagingSenderId: "736486429191",
+    appId: "1:736486429191:web:25c116beb3994d213cd0a2",
+    measurementId: "G-G2ZW22W3BM"
 };
 
-// Initialize Firebase safely
+// Firebase ကို စတင်ချိတ်ဆက်ခြင်း (Initialize)
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
+// Database နှင့် Auth ကို အသုံးပြုရန် သတ်မှတ်ခြင်း
 const db = firebase.firestore();
-const auth = firebase.auth();
+const auth = firebase.auth
 
 // ၂။ API Keys & Constants
 const ADMIN_EMAIL = "uwinkyawdevelopbusinessco@gmail.com";
