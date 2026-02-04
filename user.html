@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Community - Final Master</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <style>
+        :root { --primary: #800080; --bg: #f0f2f5; --pinned: #fff9c4; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
+        .header { background: var(--primary); color: white; padding: 12px 15px; position: sticky; top: 0; z-index: 1000; display: flex; justify-content: space-between; align-items: center; }
+        .container { max-width: 500px; margin: auto; padding: 10px; }
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; }
+        .card.pinned { border: 2px solid #ffd700; background: var(--pinned); }
+        .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 10px; }
+        .stat-item { font-size: 11px; background: #f8f9fa; padding: 5px; border-radius: 5px; text-align: center; }
+        textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 12px; box-sizing: border-box; resize: none; font-size: 15px; background: #f5f6f7; outline: none; }
+        .btn-post { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px; }
+        .action-bar { display: flex; border-top: 1px solid #eee; margin-top: 10px; padding-top: 10px; justify-content: space-around; }
+        .action-btn { background: none; border: none; color: #65676b; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .comment-item { background: #f0f2f5; border-radius: 10px; padding: 10px; margin-bottom: 8px; font-size: 13px; position: relative; }
+        .rating-stars { font-size: 25px; color: #ddd; cursor: pointer; display: flex; gap: 5px; justify-content: center; margin-bottom: 10px; }
+        .rating-stars span.active { color: #ffc107; }
+        .admin-badge { background: #ffd700; color: #000; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; }
+        #progressBox { display:none; background:#eee; border-radius:10px; margin-top:10px; height:10px; overflow:hidden; }
+        #progressBar { width:0%; height:100%; background:var(--primary); transition:0.3s; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <div style="display:flex; align-items:center; gap:5px;">
+            <div style="font-weight: bold;">Health Community</div>
+            <span id="adminBadge" style="display:none;" class="admin-badge">ADMIN</span>
+        </div>
+        <small id="userNameDisplay">Loading...</small>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <button id="googleBtn" style="background:#4285F4; color:white; border:none; padding:6px 10px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="loginWithGoogle()">Google Login</button>
+        <a href="index.html" style="text-decoration:none; color:white; font-size:22px;">🏠</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h4 style="margin:0; text-align:center; color:var(--primary);">Application Rating</h4>
+        <div id="averageRatingDisplay" style="font-size: 24px; font-weight: bold; text-align: center; margin:5px;">⭐ 0.0</div>
+        <div class="stat-grid">
+            <div class="stat-item">5⭐:<br><b id="c5">0</b></div>
+            <div class="stat-item">4⭐:<br><b id="c4">0</b></div>
+            <div class="stat-item">3⭐:<br><b id="c3">0</b></div>
+            <div class="stat-item">2⭐:<br><b id="c2">0</b></div>
+            <div class="stat-item">1⭐:<br><b id="c1">0</b></div>
+        </div>
+    </div>
+
+    <div id="ratingInputBox" class="card" style="display:none;">
+        <h3 style="font-size: 14px; text-align:center; margin-top:0;">ဒီ App ကို ဘယ်လောက်ကြိုက်သလဲ?</h3>
+        <div class="rating-stars" id="ratingStars">
+            <span onclick="setRating(1)">⭐</span><span onclick="setRating(2)">⭐</span><span onclick="setRating(3)">⭐</span><span onclick="setRating(4)">⭐</span><span onclick="setRating(5)">⭐</span>
+        </div>
+        <textarea id="feedbackText" rows="2" placeholder="အကြံပြုချက်ရေးရန်..."></textarea>
+        <button class="btn-post" onclick="submitFeedback()">Rating ပေးမည်</button>
+    </div>
+
+    <div class="card">
+        <textarea id="postContent" rows="3" placeholder="ကျန်းမာရေး ဗဟုသုတများ မျှဝေပါ..."></textarea>
+        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+            <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" onchange="previewMedia(this)">
+            <label for="mediaInput" style="padding:8px 12px; background:#eee; border-radius:6px; cursor:pointer; font-size:12px;">📷 ပုံ/ဗီဒီယို ရွေးရန်</label>
+            <button id="btnPost" class="btn-post" style="flex:1; margin:0;" onclick="uploadAndPost()">တင်မည်</button>
+        </div>
+        <div id="progressBox"><div id="progressBar"></div></div>
+        <div id="mediaPreviewBox" style="margin-top:10px; display:none;"></div>
+    </div>
+
+    <div id="newsFeed"></div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2",
+        measurementId: "G-G2ZW22W3BM"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    const ADMIN_EMAIL = "uwinkyawdevelopbusinessco@gmail.com";
+    const IMGBB_API_KEY = "C8d8d00185e973ebcafddd34f77a1176";
+    const BUNNY_KEY = "a038d7e1-bf94-448b-b863c156422e-7e4a-4299";
+    const BUNNY_STORAGE = "public-hospitals";
+
+    let userName = localStorage.getItem("health_user_name") || "Guest";
+    let selectedRatingValue = 0;
+
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            userName = user.displayName || localStorage.getItem("health_user_name") || "Guest";
+            if (user.email === ADMIN_EMAIL) {
+                userName = "Admin Developer";
+                document.getElementById('adminBadge').style.display = 'block';
+            }
+            document.getElementById('userNameDisplay').innerText = "အသုံးပြုသူ: " + userName;
+            if (user.email) document.getElementById('googleBtn').style.display = 'none';
+
+            const rDoc = await db.collection("app_feedback").doc(user.uid).get();
+            document.getElementById('ratingInputBox').style.display = rDoc.exists ? 'none' : 'block';
+            startApp();
+        } else {
+            const nick = localStorage.getItem("health_user_name") || prompt("သင့်အမည်ကို ရိုက်ထည့်ပါ:") || "Guest";
+            localStorage.setItem("health_user_name", nick);
+            auth.signInAnonymously().then(res => res.user.updateProfile({displayName: nick}));
+        }
+    });
+
+    function loginWithGoogle() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(e => alert("Login Error: " + e.message));
+    }
+
+    function previewMedia(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const box = document.getElementById('mediaPreviewBox');
+        box.innerHTML = ""; box.style.display = 'block';
+        if(file.type.startsWith('video')) {
+            box.innerHTML = `<p style="font-size:12px; color:green;">📹 ဗီဒီယို ရွေးထားသည်: ${file.name}</p>`;
+        } else {
+            const reader = new FileReader();
+            reader.onload = e => box.innerHTML = `<img src="${e.target.result}" style="width:100%; border-radius:8px;">`;
+            reader.readAsDataURL(file);
+        }
+    }
+
+    async function uploadAndPost() {
+        const text = document.getElementById('postContent').value;
+        const file = document.getElementById('mediaInput').files[0];
+        if(!text && !file) return;
+
+        const btn = document.getElementById('btnPost');
+        const bar = document.getElementById('progressBar');
+        const box = document.getElementById('progressBox');
+        btn.disabled = true; box.style.display = 'block'; bar.style.width = "20%";
+
+        try {
+            let mediaUrl = "";
+            let mediaType = "none";
+
+            if(file) {
+                if(file.size > 20 * 1024 * 1024) throw new Error("File size exceeds 20MB limit!");
+                
+                if(file.type.startsWith('video')) {
+                    const fileName = Date.now() + "_" + file.name.replace(/\s+/g, '_');
+                    // SG Region Upload Endpoint
+                    // ဗီဒီယိုအတွက် Bunny Upload အပိုင်း
+const res = await fetch(`https://sg.storage.bunnycdn.com/${BUNNY_STORAGE}/${fileName}`, {
+    method: 'PUT',
+    headers: {
+        'AccessKey': BUNNY_KEY, // Security Key
+        'Content-Type': 'application/octet-stream'
+    },
+    body: file
+});
+
+
+                    if(!res.ok) throw new Error("Bunny Video Upload Failed");
+                    mediaUrl = `https://${BUNNY_STORAGE}.b-cdn.net/${fileName}`;
+                    mediaType = "video";
+                } else {
+                    const fd = new FormData(); fd.append("image", file);
+                    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {method:"POST", body:fd});
+                    const d = await res.json();
+                    if(!d.success) throw new Error("ImgBB Upload Failed");
+                    mediaUrl = d.data.url;
+                    mediaType = "image";
+                }
+            }
+            bar.style.width = "90%";
+            await db.collection("health_posts").add({
+                author: userName, text: text, mediaUrl: mediaUrl, mediaType: mediaType,
+                likes: 0, hahas: 0, likedBy: [], hahaedBy: [], comments: [], isPinned: false, createdAt: Date.now()
+            });
+            location.reload();
+        } catch(e) { 
+            alert(e.message); 
+            btn.disabled = false; 
+            box.style.display = 'none'; 
+        }
+    }
+
+    function startApp() {
+        db.collection("app_feedback").onSnapshot(snap => {
+            let total = 0, counts = {1:0, 2:0, 3:0, 4:0, 5:0};
+            snap.forEach(doc => { const r = doc.data().rating; total += r; counts[r]++; });
+            const avg = snap.size > 0 ? (total / snap.size).toFixed(1) : "0.0";
+            document.getElementById('averageRatingDisplay').innerText = `⭐ ${avg} / 5.0`;
+            for(let i=1; i<=5; i++) document.getElementById(`c${i}`).innerText = counts[i];
+        });
+
+        db.collection("health_posts").orderBy("isPinned", "desc").orderBy("createdAt", "desc").onSnapshot(snap => {
+            const feed = document.getElementById('newsFeed');
+            feed.innerHTML = "";
+            const user = auth.currentUser;
+            const isAdmin = user && user.email === ADMIN_EMAIL;
+
+            snap.forEach(doc => {
+                const d = doc.data(); const id = doc.id;
+                const uid = user ? user.uid : null;
+
+                let commentsHtml = (d.comments || []).map(c => `
+                    <div class="comment-item">
+                        <b>${c.author}</b>: ${c.text}
+                        ${isAdmin ? `<span onclick="deleteComment('${id}','${c.id}')" style="color:red; float:right; cursor:pointer;">🗑️</span>` : ''}
+                        <div style="margin-top:5px; font-size:11px; display:flex; gap:10px;">
+                            <span onclick="reactComment('${id}','${c.id}')" style="cursor:pointer; ${(c.likedBy||[]).includes(uid)?'color:blue; font-weight:bold;':''}">👍 Like ${c.likes||0}</span>
+                        </div>
+                    </div>`).join('');
+
+                feed.innerHTML += `
+                    <div class="card ${d.isPinned ? 'pinned' : ''}">
+                        ${isAdmin ? `<div style="margin-bottom:10px; border-bottom:1px solid #ddd; padding-bottom:5px;">
+                            <span onclick="togglePin('${id}', ${d.isPinned})" style="color:blue; cursor:pointer; font-size:11px;">📌 ${d.isPinned ? 'Unpin' : 'Pin Post'}</span>
+                            <span onclick="deletePost('${id}')" style="color:red; cursor:pointer; font-size:11px; float:right;">🗑️ Delete Post</span>
+                        </div>` : ''}
+                        <b>${d.author}</b>
+                        <p style="white-space:pre-wrap;">${d.text}</p>
+                        ${d.mediaType === 'image' ? `<img src="${d.mediaUrl}" style="width:100%; border-radius:8px; margin-bottom:10px;">` : ''}
+                        ${d.mediaType === 'video' ? `<video controls playsinline class="post-video" style="width:100%; border-radius:8px; margin-bottom:10px;"><source src="${d.mediaUrl}"></video>` : ''}
+                        <div class="action-bar">
+                            <button class="action-btn" onclick="reactPost('${id}', 'likes')" style="${(d.likedBy||[]).includes(uid)?'color:blue':''}">👍 Like (${d.likes||0})</button>
+                            <button class="action-btn" onclick="reactPost('${id}', 'hahas')" style="${(d.hahaedBy||[]).includes(uid)?'color:orange':''}">😆 Haha (${d.hahas||0})</button>
+                        </div>
+                        <div style="margin-top:10px;">
+                            ${commentsHtml}
+                            <div style="display:flex; gap:5px; margin-top:10px;">
+                                <input type="text" id="in-${id}" placeholder="မှတ်ချက်..." style="flex:1; border-radius:15px; border:1px solid #ddd; padding:5px 10px;">
+                                <button onclick="addComment('${id}')" style="border:none; background:none; color:purple; font-weight:bold;">Send</button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            setupVideoObserver();
+        });
+    }
+
+    function setupVideoObserver() {
+        const obs = new IntersectionObserver(es => {
+            es.forEach(e => { if(!e.isIntersecting) e.target.pause(); });
+        }, {threshold: 0.5});
+        document.querySelectorAll('.post-video').forEach(v => obs.observe(v));
+    }
+
+    async function togglePin(id, s) { await db.collection("health_posts").doc(id).update({isPinned: !s}); }
+    async function deletePost(id) { if(confirm("ဖျက်မှာ သေချာပါသလား?")) await db.collection("health_posts").doc(id).delete(); }
+    
+    async function addComment(id) {
+        const val = document.getElementById(`in-${id}`).value;
+        if(!val) return;
+        const c = { id: Date.now().toString(), author: userName, text: val, likes:0, likedBy:[] };
+        await db.collection("health_posts").doc(id).update({ comments: firebase.firestore.FieldValue.arrayUnion(c) });
+        document.getElementById(`in-${id}`).value = "";
+    }
+
+    async function deleteComment(pId, cId) {
+        const ref = db.collection("health_posts").doc(pId);
+        const doc = await ref.get();
+        const updated = doc.data().comments.filter(c => c.id !== cId);
+        await ref.update({ comments: updated });
+    }
+
+    async function reactPost(id, type) {
+        const uid = auth.currentUser.uid;
+        const ref = db.collection("health_posts").doc(id);
+        const data = (await ref.get()).data();
+        const k = type === 'likes' ? 'likedBy' : 'hahaedBy';
+        const c = type === 'likes' ? 'likes' : 'hahas';
+        if((data[k] || []).includes(uid)) {
+            await ref.update({ [k]: firebase.firestore.FieldValue.arrayRemove(uid), [c]: firebase.firestore.FieldValue.increment(-1) });
+        } else {
+            await ref.update({ [k]: firebase.firestore.FieldValue.arrayUnion(uid), [c]: firebase.firestore.FieldValue.increment(1) });
+        }
+    }
+
+    async function reactComment(pId, cId) {
+        const uid = auth.currentUser.uid;
+        const ref = db.collection("health_posts").doc(pId);
+        const doc = await ref.get();
+        const comments = doc.data().comments.map(c => {
+            if(c.id === cId) {
+                if(!c.likedBy) c.likedBy = [];
+                if(c.likedBy.includes(uid)) {
+                    c.likedBy = c.likedBy.filter(i => i !== uid);
+                    c.likes--;
+                } else {
+                    c.likedBy.push(uid);
+                    c.likes++;
+                }
+            }
+            return c;
+        });
+        await ref.update({ comments });
+    }
+
+    function setRating(n) { selectedRatingValue = n; document.querySelectorAll('#ratingStars span').forEach((s,i) => s.classList.toggle('active', i<n)); }
+    async function submitFeedback() {
+        if(selectedRatingValue === 0) return alert("Rating ရွေးပါ");
+        await db.collection("app_feedback").doc(auth.currentUser.uid).set({rating: selectedRatingValue});
+        alert("ကျေးဇူးတင်ပါတယ်!"); location.reload();
+    }
+</script>
+</body>
+</html>
