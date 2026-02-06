@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Medical Knowledge</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  padding: 12px;
+  background: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 10px 0;
+}
+
+header img { width: 60px; height: auto; }
+header span {
+  font-size: clamp(24px, 6vw, 40px);
+  color: #d32f2f;
+  text-shadow: 2px 1px red;
+  font-weight: bold;
+}
+
+.video-wrapper {
+  width: 100%;
+  max-width: 600px;
+  margin: 15px auto;
+  position: relative;
+}
+
+.video-box {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.buy-btn {
+  position: absolute; top: 10px; left: 10px; z-index: 10;
+  padding: 4px 12px; background: #28a745; color: white;
+  text-decoration: none; border-radius: 50px; font-size: 12px;
+  border: 2px solid white; font-weight: bold;
+}
+
+.article-card {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.more-content {
+  display: none;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+  margin-top: 10px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.toggle-btn {
+  color: #0033cc;
+  font-weight: bold;
+  text-decoration: none;
+  display: inline-block;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.notice {
+  background: linear-gradient(180deg, lightblue, blue, blue, lightblue);
+  color: white;
+  text-align: center;
+  padding: 15px;
+  border: 4px solid #f00;
+  border-radius: 10px;
+}
+
+.banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding: 25px;
+  background: linear-gradient(180deg, #0033cc, #add8e6);
+  border: 5px solid black;
+  border-radius: 15px;
+}
+
+.hospital-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.hospital-links a {
+  text-decoration: none;
+  background-color: #f00;
+  color: #fff;
+  padding: 8px 15px;
+  border-radius: 8px;
+  border: 2px solid #f3b64d;
+  font-size: 16px;
+  font-weight: bold;
+}
+.live-container {
+    padding: 15px;
+}
+.video-card {
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-bottom: 4px solid #d32f2f;
+}
+.video-title {
+    padding: 10px;
+    font-weight: bold;
+    background: #f8f9fa;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.live-badge {
+    background: red;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    animation: blink 1s infinite;
+}
+@keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.5;} 100% {opacity: 1;} }
+
+    body { margin: 0; font-family: system-ui, sans-serif; padding: 12px; background: #f5f5f5; display: flex; flex-direction: column; gap: 15px; }
+    header { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 10px 0; }
+    header img { width: 60px; height: auto; }
+    header span { font-size: clamp(24px, 6vw, 40px); color: #d32f2f; text-shadow: 2px 1px red; font-weight: bold; }
+
+    /* Health Tools Styling */
+    .health-tool { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 5px solid #333; }
+    .tool-title { font-weight: bold; font-size: 18px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+    .input-style { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; margin-top: 5px; margin-bottom: 10px; }
+    .btn-style { width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
+    
+    /* အဖြေပြကွက်ကို အမြဲမြင်သာအောင် display: block ထားပါမည် */
+    .result-box { margin-top: 15px; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; background: #f9f9f9; border: 1px dashed #ccc; min-height: 20px; }
+
+    /* Video Styling */
+    .video-card { background: white; border-radius: 12px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-bottom: 4px solid #d32f2f; }
+    .video-title { padding: 10px; font-weight: bold; background: #f8f9fa; color: #333; display: flex; align-items: center; gap: 10px; }
+    .live-badge { background: red; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; animation: blink 1s infinite; }
+    @keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.5;} 100% {opacity: 1;} }
+
+    .article-card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .more-content { display: none; border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; color: #444; line-height: 1.6; }
+    .toggle-btn { color: #0033cc; font-weight: bold; cursor: pointer; display: inline-block; margin-top: 10px; }
+
+    .hospital-links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 20px; background: linear-gradient(180deg, #0033cc, #add8e6); border-radius: 15px; }
+    .hospital-links a { text-decoration: none; background-color: #f00; color: #fff; padding: 8px 15px; border-radius: 8px; border: 2px solid #f3b64d; font-size: 14px; font-weight: bold; }
+</style>
+</head>
+
+<body>
+
+<header>
+  <img src="icon.png" alt="logo">
+  <span>Publish Hospitals</span>
+</header>
+
+<div style="background-color: lightyellow; font-size: 24px; color: #00f; text-align: center; padding: 10px; font-weight: bold; border-radius: 8px; margin-bottom: 20px;">
+  Medical Knowledge Hub
+</div>
+
+<div class="health-tool" style="border-top-color: #3498db;">
+    <div class="tool-title">⚖️ BMI Calculator (Pounds/Feet)</div>
+    <label>အလေးချိန် (ပေါင် - lb):</label>
+    <input type="number" id="weightLbs" class="input-style" placeholder="ဥပမာ - 150">
+    <div style="display: flex; gap: 10px;">
+        <input type="number" id="feet" class="input-style" placeholder="ပေ (ft)">
+        <input type="number" id="inches" class="input-style" placeholder="လက်မ (in)">
+    </div>
+    <button onclick="calcBMIPounds()" class="btn-style" style="background: #3498db;">BMI တွက်မည်</button>
+    <div id="resBMIPounds" class="result-box">အဖြေဒီမှာပြပါမည်</div>
+</div>
+<div class="health-tool" style="border-top: 5px solid #27ae60;">
+    <div class="tool-title">💧 ရေသောက်ရန်လိုအပ်ချက် (Pounds စနစ်)</div>
+    <div class="input-group">
+        <label>သင့်ကိုယ်အလေးချိန် (Pounds - ပေါင်) ထည့်ပါ:</label>
+        <input type="number" id="waterWeightLb" class="input-style" placeholder="ဥပမာ - 150">
+    </div>
+    <button onclick="calcWaterLbs()" class="btn-style" style="background: #27ae60;">တွက်ချက်မည်</button>
+    
+    <div id="waterResLb" class="result-box" style="background: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; display: block;">
+        ဂဏန်းရိုက်ထည့်ပြီး ခလုတ်နှိပ်ပါ
+    </div>
+</div>
+<div class="health-tool" style="border-top: 5px solid #9b59b6;">
+    <div class="tool-title">💊 ဆေးသောက်ရန် သတိပေးချက်</div>
+    <div class="input-group">
+        <label>ဆေးအမည်:</label>
+        <input type="text" id="medName" class="input-style" placeholder="ဥပမာ - ပါရာစီတမော">
+        <label>သောက်ရမည့်အချိန်:</label>
+        <input type="time" id="medTime" class="input-style">
+    </div>
+    <button onclick="setMedReminder()" class="btn-style" style="background: #9b59b6;">သတိပေးချက် တင်မည်</button>
+    
+    <div id="medRes" class="result-box" style="background: #f3e5f5; color: #4a148c; border: 1px solid #d1c4e9; display: block;">
+        ဆေးအမည်နှင့် အချိန်ထည့်ပါ။
+    </div>
+</div>
+
+<div class="health-tool" style="border-top: 5px solid #f44336;">
+    <div class="tool-title">❤️ နှလုံးခုန်နှုန်း (Heart Rate) စစ်ဆေးခြင်း</div>
+    <p style="font-size: 13px; color: #666; margin-bottom: 10px;">
+        လက်ကောက်ဝတ် သွေးကြောကို စမ်းပြီး ၁ မိနစ်အတွင်း ခုန်သည့်အကြိမ်ရေကို ထည့်ပါ။
+    </p>
+    <div class="input-group">
+        <label>နှလုံးခုန်နှုန်း (BPM):</label>
+        <input type="number" id="bpmInput" class="input-style" placeholder="ဥပမာ - 75">
+    </div>
+    <button onclick="checkHeartRate()" class="btn-style" style="background: #f44336;">အခြေအနေ စစ်ဆေးမည်</button>
+    
+    <div id="heartRes" class="result-box" style="background: #ffebee; color: #b71c1c; border: 1px solid #ffcdd2; display: block;">
+        ဂဏန်းရိုက်ထည့်ပြီး စစ်ဆေးပါ။
+    </div>
+</div>
+
+<div class="health-tool" style="border-top-color: #e67e22;">
+    <div class="tool-title">🤒 အခြေခံရောဂါလက္ခဏာ စစ်ဆေးစနစ်</div>
+    <select id="symptom" class="input-style">
+        <option value="none">-- ရောဂါလက္ခဏာရွေးပါ --</option>
+        <option value="fever">ဖျားခြင်း၊ ခေါင်းကိုက်ခြင်း</option>
+        <option value="cough">ချောင်းဆိုးခြင်း၊ လည်ချောင်းနာခြင်း</option>
+        <option value="stomach">ဗိုက်အောင့်ခြင်း၊ ဝမ်းလျှောခြင်း</option>
+    </select>
+    <button onclick="checkSymptom()" class="btn-style" style="background: #e67e22;">စစ်ဆေးမည်</button>
+    <div id="symptomRes" class="result-box">အဖြေဒီမှာပြပါမည်</div>
+</div>
+
+<div class="health-tool" style="border-top-color: #e91e63;">
+    <div class="tool-title">🗓️ Period & Ovulation Tracker</div>
+    <label>နောက်ဆုံးရာသီလာခဲ့သည့်ရက်:</label>
+    <input type="date" id="lastPeriod" class="input-style">
+    <button onclick="trackPeriod()" class="btn-style" style="background: #e91e63;">ရက်ချိန်းတွက်မည်</button>
+    <div id="periodRes" class="result-box">အဖြေဒီမှာပြပါမည်</div>
+</div>
+
+<h2 style="text-align:center; color:#d32f2f;">📺 Live Channels</h2>
+
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> BBC News</div>
+    <iframe width="100%" height="220" src="https://www.youtube.com/embed/live_stream?channel=UC16niRr50-MSBwiO3YDb3RA" frameborder="0" allowfullscreen></iframe>
+</div>
+
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> RFA Burmese</div>
+    <iframe width="100%" height="220" src="https://www.youtube.com/embed/live_stream?channel=UC4p9_7S-MOCv5idYatI_zSg" frameborder="0" allowfullscreen></iframe>
+</div>
+
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> ONE Championship</div>
+    <iframe width="100%" height="220" src="https://www.youtube.com/embed/live_stream?channel=UCRscOESpALN_9-qFSunYx0w" frameborder="0" allowfullscreen></iframe>
+</div>
+<div style="background-color: lightyellow;margin-top: -50px; font-size: 24px; color: #00f; text-align: center; padding: 10px; font-weight: bold; border-radius: 8px;">
+  medical knowledge
+</div>
+
+<div class="article-card">
+    <h3>၂။ သွေးတိုးရောဂါ ကာကွယ်ရန် ဆောင်ရန်/ရှောင်ရန်</h3>
+    <p>သွေးတိုးခြင်းကို ကာကွယ်ရန် အငန်ဓာတ် လျှော့စားခြင်း၊ လေ့ကျင့်ခန်း ပုံမှန်လုပ်ခြင်းနှင့် ကိုယ်အလေးချိန် ထိန်းညှိခြင်းတို့သည် အလွန်အရေးကြီးပါသည်။</p>
+    
+    <div id="art2-content" class="more-content">
+        သွေးတိုးရောဂါသည် တိတ်ဆိတ်သော လူသတ်သမားဟု တင်စားကြသည့်အတိုင်း လက္ခဏာမပြဘဲ နောက်ဆက်တွဲ ဆိုးကျိုးများ ပေးတတ်သည်။ အငန်လျှော့စားခြင်းအပြင် အသီးအနှံများများစားခြင်းနှင့် စိတ်ဖိစီးမှုလျှော့ချခြင်းဖြင့် သွေးပေါင်ချိန်ကို ထိန်းညှိနိုင်ပါသည်။
+    </div>
+    <a class="toggle-btn" onclick="toggleArt('art2-content', this)">ဆက်လက်ဖတ်ရှုရန်...</a>
+</div>
+
+<div class="video-wrapper">
+    <div class="video-box">
+        <a href="tel:09675990009" class="buy-btn">ဝယ်မည်</a>
+        <video class="smart-video" controls playsinline>
+            <source src="https://www.dropbox.com/scl/fi/w3uvn265nwzombk4u5b27/h1.mp4?rlkey=d07ixg37ipz3apr8kojbdqba8&st=pa1q6vys&raw=1" type="video/mp4">
+        </video>
+    </div>
+</div>
+<div class="live-container">
+    <h2 style="text-align:center; margin-bottom:15px; color:#0033cc;">Live သတင်းဌာနများ</h2>
+
+    <div class="video-card">
+        <div class="video-title"><span class="live-badge">LIVE</span> BBC News (International)</div>
+        <iframe width="100%" height="220" 
+            src="https://www.youtube.com/embed/live_stream?channel=UC16niRr50-MSBwiO3YDb3RA" 
+            frameborder="0" allowfullscreen>
+        </iframe>
+    </div>
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> Cartoon Network</div>
+    <iframe width="100%" height="220" 
+        src="https://www.youtube.com/embed/live_stream?channel=UC9asO_p_9C6u8S_8HIna6YQ" 
+        frameborder="0" allowfullscreen>
+    </iframe>
+</div>
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> ONE Championship</div>
+    <iframe width="100%" height="220" 
+        src="https://www.youtube.com/embed/live_stream?channel=UCRscOESpALN_9-qFSunYx0w" 
+        frameborder="0" allowfullscreen>
+    </iframe>
+</div>
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> UFC Official</div>
+    <iframe width="100%" height="220" 
+        src="https://www.youtube.com/embed/live_stream?channel=UCpB9ws74zQGu9qh0UcA87tg" 
+        frameborder="0" allowfullscreen>
+    </iframe>
+</div>
+
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> Nick Jr.</div>
+    <iframe width="100%" height="220" 
+        src="https://www.youtube.com/embed/live_stream?channel=UCvInHOKXAnvUInX_t39WbPw" 
+        frameborder="0" allowfullscreen>
+    </iframe>
+</div>
+<div class="video-card">
+    <div class="video-title">UEFA Champions League</div>
+    <iframe width="100%" height="220" 
+        src="https://www.youtube.com/embed/live_stream?channel=UCi7hY7_oV_iS-P6UuU-f_iA" 
+        frameborder="0" allowfullscreen>
+    </iframe>
+</div>
+
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> Football Daily</div>
+    <iframe width="100%" height="220" 
+        src="https://www.youtube.com/embed/live_stream?channel=UCY9E69h_O-98pXv8sN-e89A" 
+        frameborder="0" allowfullscreen>
+    </iframe>
+</div>
+
+    <div class="video-card">
+        <div class="video-title"><span class="live-badge">LIVE</span> RFA Burmese</div>
+        <iframe width="100%" height="220" 
+            src="https://www.youtube.com/embed/live_stream?channel=UC4p9_7S-MOCv5idYatI_zSg" 
+            frameborder="0" allowfullscreen>
+        </iframe>
+    </div>
+
+    <div class="video-card">
+        <div class="video-title"><span class="live-badge">LIVE</span> VOA Burmese</div>
+        <iframe width="100%" height="220" 
+            src="https://www.youtube.com/embed/live_stream?channel=UCre2_Y_9VpL2VzP4L0_M9Yw" 
+            frameborder="0" allowfullscreen>
+        </iframe>
+    </div>
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> NASA TV</div>
+    <iframe width="100%" height="220" 
+        src="https://www.youtube.com/embed/live_stream?channel=UCLA_DiR1FfKNvjuUpBHmylQ" 
+        frameborder="0" allowfullscreen>
+    </iframe>
+</div>
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> Legacy Music Myanmar</div>
+    <iframe width="100%" height="220" 
+        src="https://www.youtube.com/embed/live_stream?channel=UCXwI_67Ais069YmD80zWwVw" 
+        frameborder="0" allowfullscreen>
+    </iframe>
+</div>
+
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> Mahar - မဟာ</div>
+    <iframe width="100%" height="220" 
+        src="https://www.youtube.com/embed/live_stream?channel=UCv_A8N-H_4pYwA67X_9vSbg" 
+        frameborder="0" allowfullscreen>
+    </iframe>
+</div>
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> Lofi Girl - Relax/Study</div>
+    <iframe width="100%" height="220" 
+        src="https://www.youtube.com/embed/live_stream?channel=UCSJ4gkVC6NrvII8umztf0Ow" 
+        frameborder="0" allowfullscreen>
+    </iframe>
+</div>
+
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> Explore Nature Live</div>
+    <iframe width="100%" height="220" 
+        src="https://www.youtube.com/embed/live_stream?channel=UC_7_Oid0r8O8i3rP7S_i0ng" 
+        frameborder="0" allowfullscreen>
+    </iframe>
+</div>
+
+
+    <div class="video-card" style="padding: 20px; text-align: center;">
+        <div style="font-weight:bold; margin-bottom:10px;">MRTV & MWD Live</div>
+        <p style="font-size: 12px; color: #666; margin-bottom:15px;">Official Website များတွင် တိုက်ရိုက်ကြည့်ရှုရန်</p>
+        <div style="display:flex; gap:10px; justify-content:center;">
+            <a href="https://www.mrtv.gov.mm/en/live" target="_blank" style="background:#0033cc; color:white; padding:10px 15px; border-radius:8px; text-decoration:none;">MRTV Live</a>
+            <a href="https://www.myawady.net.mm" target="_blank" style="background:#28a745; color:white; padding:10px 15px; border-radius:8px; text-decoration:none;">MWD Live</a>
+        </div>
+    </div>
+</div>
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> WWE Official</div>
+    <iframe width="100%" height="220" 
+        src="https://www.youtube.com/embed/live_stream?channel=UCpB9ws74zQGu9qh0UcA87tg" 
+        frameborder="0" allowfullscreen>
+    </iframe>
+</div>
+
+<div class="video-card">
+    <div class="video-title"><span class="live-badge">LIVE</span> Sky Sports News</div>
+    <iframe width="100%" height="220" 
+        src="https://www.youtube.com/embed/live_stream?channel=UC0p5jTq6XTo03py5y0noR7g" 
+        frameborder="0" allowfullscreen>
+    </iframe>
+</div>
+
+<div class="article-card">
+    <h3 style="color: #d32f2f;">🚨 ကျန်းမာရေးဝန်ကြီးဌာန အရေးပေါ်သတင်း (၂၇-၁-၂၀၂၆)</h3>
+    <p>တိုင်းဒေသကြီးနှင့် ပြည်နယ်အချို့တွင် ဖြစ်ပွားနေသော ဝမ်းပျက်ဝမ်းလျှောရောဂါနှင့် ပတ်သက်သည့် အသိပေးချက်။</p>
+    <div style="color: #555; font-size: 14px;">
+        ရန်ကုန်တိုင်းဒေသကြီး၊ ဧရာဝတီတိုင်းဒေသကြီး၊ ပဲခူးတိုင်းဒေသကြီး စသည့် ဒေသများတွင်... ဖြစ်ပွားမှုများ အများအပြားရှိနေပါသဖြင့် ရောဂါကာကွယ်ရန်အတွက် လက်ကို စင်ကြယ်စွာဆေးကြောရန်နှင့် အစားအသောက်များကို သတိပြုရန် နှိုးဆော်အပ်ပါသည်။
+    </div>
+</div>
+
+<div class="video-wrapper">
+    <div class="video-box">
+        <a href="tel:09675990009" class="buy-btn">ဝယ်မည်</a>
+        <video class="smart-video" controls playsinline>
+            <source src="https://www.dropbox.com/scl/fi/7iwylwrzkozn36ys0pfew/h3.mp4?rlkey=efngp1xn63ayhyyyy92kaczlg&st=6bfhhzn8&raw=1" type="video/mp4">
+        </video>
+    </div>
+</div>
+
+<div class="article-card">
+    <h3>၁။ နေ့စဉ် ရေများများသောက်ခြင်း၏ အကျိုးကျေးဇူး</h3>
+    <p>ကျန်းမာရေးအတွက် တစ်နေ့လျှင် ရေ (၈) ဖန်ခွက် သောက်ပေးခြင်းဖြင့် အသားအရေ စိုပြေစေရုံသာမက ကျောက်ကပ်လုပ်ဆောင်ချက်ကိုလည်း ကောင်းမွန်စေပါသည်။</p>
+    
+    <div id="art1-content" class="more-content">
+        မနက်အိပ်ရာနိုးချိန် ရေသောက်ခြင်းက အစာအိမ်နှင့် အူလမ်းကြောင်းကို သန့်စင်ပေးပြီး ကိုယ်အလေးချိန် ကျဆင်းစေရန်လည်း အထောက်အကူပြုသည်။ ရေဓာတ်ပြည့်ဝနေပါက ဦးနှောက်ကြည်လင်ပြီး အလုပ်လုပ်ရာတွင် ပိုမိုအာရုံစိုက်နိုင်စေပါသည်။
+    </div>
+    <a class="toggle-btn" onclick="toggleArt('art1-content', this)">ဆက်လက်ဖတ်ရှုရန်...</a>
+</div>
+
+<footer class="notice">
+  သင့်ကျန်းမာရေးအတွက် ဆေးကုသမှုလိုအပ်ပါက <strong>ဆေးရုံအမည်ကို နှိပ်ပြီး</strong> အသေးစိတ်ကြည့်ရှုနိုင်ပါသည်။
+</footer>
+
+<section class="banner">
+    <h2 style="color: white;">ပြည်သူ့ကျန်းမာရေး</h2>
+    <div class="hospital-links">
+        <a href="yhospital.html">ရန်ကုန်ပြည်သူ့ဆေးရုံကြီး</a>
+        <a href="mhospital.html">မြောက်ဥက္ကလာပဆေးရုံကြီး</a>
+        <a href="ihospital.html">အင်းစိန်ဆေးရုံကြီး</a>
+        <a href="thospital.html">သင်္ကန်းကျွန်းဆေးရုံကြီး</a>
+        <a href="lhospital.html">လှိုင်သာယာဆေးရုံကြီး</a>
+        <a href="shospital.html">ရွှေပြည်သာဆေးရုံကြီး</a>
+        <a href="dhospital.html">ဇီဝိတဒါနသံဃာ့ဆေးရုံကြီး</a>
+        <a href="hhospital.html">အထူးကုဆေးရုံများ</a>
+        <a href="bhospital.html">ကလေးဆေးရုံများ</a>
+        <a href="khospital.html">ဆေးပညာ</a>
+        <a href="phospital.html">Promotion</a>
+        <a href="user.html">Users</a>
+                    <a href="tun.html">
+                ထွန်းအခမဲ့ဆေးခန်းများ
+            </a>
+        <a href="eye.html">မျက်စိအခမဲ့ ခွဲစိတ်ခန်းများ</a>
+    </div>
+</section>
+
+<script>
+// --- Video Smart Pause Logic ---
+const videoObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        const video = entry.target;
+        // ဗီဒီယိုက Screen ပေါ်မှာ မရှိတော့ရင် (သို့မဟုတ် ၂၀% ထက် နည်းသွားရင်) ရပ်မယ်
+        if (!entry.isIntersecting) {
+            video.pause();
+        }
+    });
+}, { threshold: 0.2 });
+
+// smart-video class ပါတဲ့ ဗီဒီယိုအားလုံးကို စောင့်ကြည့်ခိုင်းမယ်
+document.querySelectorAll('.smart-video').forEach((video) => {
+    videoObserver.observe(video);
+});
+
+// --- Toggle Article Content ---
+function toggleArt(id, btn) {
+    var content = document.getElementById(id);
+    if (content.style.display === "block") {
+        content.style.display = "none";
+        btn.innerHTML = "ဆက်လက်ဖတ်ရှုရန်...";
+        btn.style.color = "#0033cc";
+    } else {
+        content.style.display = "block";
+        btn.innerHTML = "ပြန်ပိတ်ရန်";
+        btn.style.color = "red";
+    }
+}
+</script>
+<section class="hospital-links">
+    <a href="yhospital.html">ရန်ကုန်ဆေးရုံကြီး</a>
+    <a href="mhospital.html">မြောက်ဥက္ကလာဆေးရုံ</a>
+    <a href="khospital.html">ဆေးပညာ</a>
+    <a href="user.html">အသုံးပြုသူများ</a>
+    <a href="tun.html">ထွန်းအခမဲ့ဆေးခန်း</a>
+</section>
+
+<script>
+// 1. BMI Calculation (Pound/Feet)
+function calcBMIPounds() {
+    const lbs = parseFloat(document.getElementById('weightLbs').value);
+    const ft = parseFloat(document.getElementById('feet').value) || 0;
+    const inch = parseFloat(document.getElementById('inches').value) || 0;
+    const res = document.getElementById('resBMIPounds');
+    const totalInches = (ft * 12) + inch;
+
+    if (lbs > 0 && totalInches > 0) {
+        const bmi = (lbs / (totalInches * totalInches)) * 703;
+        let status = (bmi < 18.5) ? "ဝိတ်နည်းနေသည်" : (bmi < 25) ? "ပုံမှန်ဖြစ်သည်" : (bmi < 30) ? "ဝိတ်များနေသည်" : "အလွန်ဝနေသည်";
+        res.style.background = "#d4edda";
+        res.innerHTML = `BMI: ${bmi.toFixed(1)} <br> ${status}`;
+    } else {
+        res.innerHTML = "ဂဏန်းအမှန်များ ထည့်သွင်းပါ။";
+    }
+}
+function calcWaterLbs() {
+    const lbs = parseFloat(document.getElementById('waterWeightLb').value);
+    const res = document.getElementById('waterResLb');
+
+    if (lbs > 0) {
+        // ပုံသေနည်း- ပေါင်ဝိတ်ရဲ့ တစ်ဝက်ကို အောင်စ (oz) အဖြစ် သောက်ရပါမယ်
+        const ounces = (lbs / 2).toFixed(1);
+        // အောင်စမှ လီတာ (Liter) ပြောင်းခြင်း (1 oz = 0.0295 liters)
+        const liters = (ounces * 0.0295).toFixed(1);
+        
+        res.style.background = "#e1f5fe";
+        res.style.color = "#01579b";
+        res.innerHTML = `
+            <div style="font-size: 18px;">တစ်နေ့လျှင်ရေ <b>${ounces} oz</b> (အောင်စ) သောက်ပါ</div>
+            <div style="font-size: 14px; margin-top: 5px;">(ခန့်မှန်းခြေ <b>${liters} လီတာ</b> ခန့် သောက်သုံးသင့်ပါသည်)</div>
+        `;
+    } else {
+        res.innerHTML = "ကျေးဇူးပြု၍ ကိုယ်အလေးချိန် (ပေါင်) အမှန်ကို ထည့်ပေးပါ။";
+        res.style.background = "#ffebee";
+        res.style.color = "#c62828";
+    }
+}
+
+// 3. Symptom Checker
+function checkSymptom() {
+    const s = document.getElementById('symptom').value;
+    const res = document.getElementById('symptomRes');
+    let advice = (s === "fever") ? "အနားယူပါ၊ ရေများများသောက်ပါ။" : (s === "cough") ? "ဆားရည်ဖြင့် အာလုပ်ကျင်းပေးပါ။" : (s === "stomach") ? "ဓာတ်ဆားရည်သောက်ပေးပါ။" : "လက္ခဏာရွေးချယ်ပါ။";
+    res.innerHTML = advice;
+}
+
+// 4. Period Tracker
+function trackPeriod() {
+    const lastDate = new Date(document.getElementById('lastPeriod').value);
+    const res = document.getElementById('periodRes');
+    if(!isNaN(lastDate)) {
+        const nextPeriod = new Date(lastDate);
+        nextPeriod.setDate(nextPeriod.getDate() + 28);
+        res.innerHTML = `နောက်လရာသီလာမည့်ရက်: ${nextPeriod.toDateString()}`;
+    }
+}
+
+// Toggle Article
+function toggleArt(id, btn) {
+    var content = document.getElementById(id);
+    if (content.style.display === "block") {
+        content.style.display = "none";
+        btn.innerHTML = "ဆက်လက်ဖတ်ရှုရန်...";
+    } else {
+        content.style.display = "block";
+        btn.innerHTML = "ပြန်ပိတ်ရန်";
+    }
+}
+// ၁။ ဆေးသောက်ရန် သတိပေးချက် Function
+function setMedReminder() {
+    const name = document.getElementById('medName').value;
+    const time = document.getElementById('medTime').value;
+    const res = document.getElementById('medRes');
+
+    if (name && time) {
+        res.style.background = "#e8f5e9";
+        res.style.color = "#2e7d32";
+        res.innerHTML = `✅ မှတ်သားပြီးပါပြီ။ <br> <b>${time}</b> နာရီတွင် <b>${name}</b> သောက်ရန် မမေ့ပါနှင့်။`;
+        
+        // Browser ကနေ အသံနဲ့သတိပေးချက် (Optional)
+        alert("ဆေးသောက်ရန် သတိပေးချက် တင်ပြီးပါပြီ။");
+    } else {
+        res.style.background = "#fff3e0";
+        res.style.color = "#e65100";
+        res.innerText = "ကျေးဇူးပြု၍ ဆေးအမည်နှင့် အချိန်ကို အပြည့်အစုံထည့်ပါ။";
+    }
+}
+
+// ၂။ နှလုံးခုန်နှုန်း စစ်ဆေးခြင်း Function
+function checkHeartRate() {
+    const bpm = parseInt(document.getElementById('bpmInput').value);
+    const res = document.getElementById('heartRes');
+
+    if (bpm > 0) {
+        let status = "";
+        let color = "";
+        let bgColor = "";
+
+        // ပုံမှန်နှလုံးခုန်နှုန်း သတ်မှတ်ချက် (60 - 100 BPM)
+        if (bpm < 60) {
+            status = "နှလုံးခုန်နှုန်း ပုံမှန်ထက် နှေးနေပါသည်။ (Bradycardia)";
+            color = "#0d47a1";
+            bgColor = "#e3f2fd";
+        } else if (bpm <= 100) {
+            status = "နှလုံးခုန်နှုန်း ပုံမှန်ဖြစ်ပါသည်။ (Healthy)";
+            color = "#1b5e20";
+            bgColor = "#e8f5e9";
+        } else {
+            status = "နှလုံးခုန်နှုန်း ပုံမှန်ထက် မြန်နေပါသည်။ (Tachycardia)";
+            color = "#b71c1c";
+            bgColor = "#ffebee";
+        }
+
+        res.style.background = bgColor;
+        res.style.color = color;
+        res.innerHTML = `သင့်နှလုံးခုန်နှုန်းမှာ <b>${bpm} BPM</b> ဖြစ်ပြီး <br> <b>${status}</b>`;
+    } else {
+        res.innerText = "ဂဏန်းအမှန် ထည့်သွင်းပေးပါ။";
+    }
+}
+
+</script>
+
+</body>
+</html>
+
