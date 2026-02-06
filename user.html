@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Community - Master</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="phoneLoginModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+        <div style="background:white; width:90%; max-width:400px; margin:50px auto; padding:20px; border-radius:10px;">
+            <h3 style="color:black;">Phone Login</h3>
+            <input type="tel" id="phoneNumber" placeholder="9xxxxxxxx" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:5px;">
+            <div id="recaptcha-container"></div>
+            <button onclick="sendOTP()" id="sendOTPBtn" style="background:purple; color:white; padding:10px; border:none; border-radius:5px; width:100%; margin:10px 0; cursor:pointer;">Send OTP</button>
+            
+            <div id="otpSection" style="display:none;">
+                <input type="text" id="otpCode" placeholder="Enter OTP" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:5px;">
+                <button onclick="verifyOTP()" style="background:green; color:white; padding:10px; border:none; border-radius:5px; width:100%; margin:5px 0; cursor:pointer;">Verify OTP</button>
+            </div>
+            
+            <button onclick="closePhoneLogin()" style="background:gray; color:white; padding:10px; border:none; border-radius:5px; width:100%; margin-top:10px; cursor:pointer;">Cancel</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <div>
+            <div style="display:flex; align-items:center; gap:5px;">
+                <div style="font-weight: bold; color:white;">Health Community</div>
+                <span id="adminBadge" style="display:none;" class="admin-badge">ADMIN</span>
+            </div>
+            <small id="userNameDisplay" style="color:white;">Loading...</small>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button id="googleBtn" class="google-login-btn" onclick="loginWithGoogle()">Google Login</button>
+            <button id="phoneLoginBtn" onclick="showPhoneLogin()" style="background:green; color:white; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; font-size:12px;">📱 Phone</button>
+            <a href="index.html" style="text-decoration:none; color:white; font-size:22px;">🏠</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h4 style="margin:0; text-align:center; color:purple;">App Rating</h4>
+            <div id="averageRatingDisplay" style="font-size: 24px; font-weight: bold; text-align: center; margin:5px; color:black;">⭐ 0.0</div>
+            <div class="stat-grid" style="display:grid; grid-template-columns: repeat(5, 1fr); text-align:center; font-size:12px; color:black;">
+                <div class="stat-item">5⭐:<br><b id="c5">0</b></div>
+                <div class="stat-item">4⭐:<br><b id="c4">0</b></div>
+                <div class="stat-item">3⭐:<br><b id="c3">0</b></div>
+                <div class="stat-item">2⭐:<br><b id="c2">0</b></div>
+                <div class="stat-item">1⭐:<br><b id="c1">0</b></div>
+            </div>
+        </div>
+
+        <div id="ratingInputBox" class="card" style="display:none;">
+            <h3 style="font-size: 14px; text-align:center; margin-top:0; color:black;">ဒီ App ကို ဘယ်လောက်ကြိုက်သလဲ?</h3>
+            <div class="rating-stars" id="ratingStars" style="text-align:center; font-size:25px; cursor:pointer; margin-bottom:10px;">
+                <span id="star-1" onclick="setRating(1)">⭐</span>
+                <span id="id-2" id="star-2" onclick="setRating(2)">⭐</span>
+                <span id="star-3" onclick="setRating(3)">⭐</span>
+                <span id="star-4" onclick="setRating(4)">⭐</span>
+                <span id="star-5" onclick="setRating(5)">⭐</span>
+            </div>
+            <textarea id="feedbackText" rows="2" placeholder="အကြံပြုချက်ရေးရန်..." style="width:100%; border-radius:8px; padding:10px; border:1px solid #ddd;"></textarea>
+            <button id="submitFeedbackBtn" class="btn-post" style="width:100%; margin-top:10px;" onclick="submitFeedback()">Rating ပေးမည်</button>
+        </div>
+
+        <div class="card">
+            <textarea id="postContent" rows="3" placeholder="ကျန်းမာရေး ဗဟုသုတများ မျှဝေပါ..." style="width:100%; border-radius:8px; padding:10px; border:1px solid #ddd;"></textarea>
+            <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+                <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" onchange="previewMedia(this)">
+                <label for="mediaInput" class="upload-label" style="background:#eee; padding:10px; border-radius:5px; cursor:pointer; flex:1; text-align:center;">📷 ပုံ/ဗီဒီယို ရွေးရန်</label>
+                <button id="btnPost" class="btn-post" style="flex:1; margin:0;" onclick="uploadAndPost()">တင်မည်</button>
+            </div>
+            <div id="mediaPreviewBox" style="margin-top:10px; display:none; text-align:center;"></div>
+        </div>
+
+        <div id="newsFeed"></div>
+        <div id="adminFeedbackSection" class="card" style="display:none; background: #fffcf0;">
+    <h3 style="color: purple; border-bottom: 2px solid purple; padding-bottom: 5px;">User Feedbacks</h3>
+    <div id="feedbackList" style="max-height: 400px; overflow-y: auto; margin-top: 10px;">
+        </div>
+</div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
