@@ -338,6 +338,38 @@ function observeVideos() {
     const allVideos = document.querySelectorAll('video');
     allVideos.forEach(v => videoObserver.observe(v));
 }
+async function reactComment(postId, index, type) {
+    if (!checkLogin()) return;
+    
+    const ref = db.collection("health_posts").doc(postId);
+    const snap = await ref.get();
+    
+    if (!snap.exists) return;
 
+    let comments = [...snap.data().comments];
+    let c = comments[index];
+    const uid = auth.currentUser.uid;
+    
+    const field = type === 'likes' ? 'likedBy' : 'hahaedBy';
+    const countField = type === 'likes' ? 'likes' : 'hahas';
+
+    // Array မရှိသေးရင် အသစ်တည်ဆောက်ပေးရန်
+    if (!c[field]) c[field] = [];
+    if (!c[countField]) c[countField] = 0;
+
+    if (c[field].includes(uid)) {
+        // Reaction ပေးပြီးသားဆိုရင် ပြန်ဖြုတ်မယ်
+        c[field] = c[field].filter(x => x !== uid);
+        c[countField] = Math.max(0, c[countField] - 1);
+    } else {
+        // Reaction အသစ်ပေးမယ်
+        c[field].push(uid);
+        c[countField] = (c[countField] || 0) + 1;
+    }
+
+    // Database ထဲမှာ တစ်ခုလုံးကို ပြန် Update လုပ်မယ်
+    await ref.update({ comments });
+        }
+            
 // ဤ function ကို loadPosts ထဲက snapshot အပြောင်းအလဲဖြစ်တိုင်း ခေါ်ပေးရပါမည်
 
