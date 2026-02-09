@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - EmotioN Social Media</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script>
+        const firebaseConfig = {
+    apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+    authDomain: "hospital-app-caf85.firebaseapp.com",
+    projectId: "hospital-app-caf85",
+    storageBucket: "hospital-app-caf85.firebasestorage.app",
+    messagingSenderId: "736486429191",
+    appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+};
+// Firebase App ကို စတင်ဖွင့်လှစ်ခြင်း
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
+// Firestore Database ကို ခေါ်ယူအသုံးပြုခြင်း
+const db = firebase.firestore();
+
+// Authentication (Login စနစ်) အတွက် ခေါ်ယူခြင်း
+const auth = firebase.auth();
+const IMGBB_KEY = "C8d8d00185e973ebcafddd34f77a1176";         // ပုံတင်ရန် Key
+const BUNNY_KEY = "a038d7e1-bf94-448b-b863c156422e-7e4a-4299"; // ဗီဒီယိုတင်ရန် Key
+const BUNNY_STORAGE = "public-hospitals";                      // Bunny Storage နာမည်
+
+    </script>
+    <style>
+        :root {
+            --primary-purple: #800080;
+            --gold: #f3b64d;
+            --crown-purple: #a332c3;
+            --text-dark: #333;
+            --bg-light: #f0f2f5;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background-color: var(--bg-light); padding-top: 70px; padding-bottom: 80px; }
+
+        /* --- Global Header --- */
+        .global-header {
+            position: fixed; top: 0; width: 100%; height: 65px;
+            background: var(--primary-purple); display: flex;
+            justify-content: space-between; align-items: center;
+            padding: 0 15px; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+/* --- 2. Header Section --- */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%; /* ပြင်ဆင်ထားခြင်း */
+    height: 85px;
+    padding: 0 15px;
+    background-color: #800080;
+    position: fixed;
+    top: 0;
+    left: 0; /* ပြင်ဆင်ထားခြင်း */
+    z-index: 1000;
+    border-radius: 15px; /* ပြင်ဆင်ထားခြင်း - ထောင့်များကွေးစေရန် */
+}
+
+
+.logo { display: flex; align-items: center; }
+.e-box {
+    width: 50px; height: 50px;
+    position: relative;
+    display: flex; justify-content: center; align-items: center;
+}
+.e-box::before {
+    content: ""; position: absolute; inset: 0;
+    border: 3px solid white; border-right: none;
+    border-radius: 8px 15px 15px 8px;
+    box-shadow: 0 0 8px #ffcc70;
+}
+.e-letter { font-size: 33px; font-weight: 800; color: #f3b64d; }
+.logo-text { font-size: 28px; font-weight: 700; color: white; margin-left: -10px; }
+ .header-tools { display: flex; gap: 18px; align-items: center; }
+        .header-tools img { width: 24px; height: 24px; filter: invert(1); cursor: pointer; }
+
+        /* --- Profile Cover & Avatar --- */
+        .profile-header { background: white; position: relative; margin-bottom: 15px; height: auto; }
+        .cover-area { width: 100%; height: 180px; background: #ddd; position: relative; }
+        .cover-area img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Edit Cover ခလုတ် */
+        .edit-cover-btn { 
+            position: absolute; bottom: 10px; right: 10px; 
+            background: rgba(0,0,0,0.6); color: white; 
+            padding: 5px 10px; border-radius: 5px; 
+            font-size: 12px; cursor: pointer; z-index: 110; 
+        }
+        
+        .avatar-area { 
+            position: absolute; 
+            bottom: 15px; 
+            left: 20px; 
+            width: 110px; 
+            height: 110px; 
+            border-radius: 50%; 
+            border: 4px solid white; 
+            background: #eee; 
+            overflow: hidden;
+            z-index: 100;
+        }
+        .avatar-area img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Edit Avatar ခလုတ် - အခု သေချာမြင်ရအောင် လုပ်ထားပါတယ် */
+        .edit-avatar-btn { 
+    position: absolute; 
+    bottom: 0;           /* အပေါ် (top) ကနေ အောက် (bottom) ကို ပြောင်းလိုက်တာပါ */
+    left: 0;
+    width: 100%; 
+    background: rgba(0, 0, 0, 0.5); /* ခပ်မှောင်မှောင် အရောင်လေးနဲ့ ပိုပေါ်အောင် လုပ်ထားပါတယ် */
+    color: white; 
+    font-size: 10px;    /* စာသားကို ခပ်သေးသေး ပြောင်းလိုက်ပါတယ် */
+    text-align: center; 
+    padding: 3px 0;     /* အပေါ်အောက် အကွာအဝေးကို နည်းနည်းလျှော့လိုက်ပါတယ် */
+    cursor: pointer; 
+    z-index: 105; 
+    font-weight: bold;
+    text-transform: uppercase; /* စာလုံးကြီးနဲ့ ပိုသေသပ်အောင် လုပ်တာပါ */
+}
+
+
+        /* Profile နာမည် Alignment */
+        .profile-basic-info { 
+            padding: 10px 20px 20px 145px; 
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .user-name-row { display: flex; align-items: center; gap: 10px; }
+        #profileName { font-size: 22px; font-weight: bold; color: var(--text-dark); }
+        .tier-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .badge-normal { background: #e0e0e0; color: #666; }
+
+        /* --- Wall / Post Area --- */
+        .post-box { background: white; margin: 10px; padding: 15px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .post-input-area { display: flex; gap: 10px; align-items: center; }
+        .post-input-area input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; background: #f0f2f5; outline: none; }
+        .post-actions { display: flex; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; justify-content: space-around; }
+        .act-btn { font-size: 13px; color: #65676b; font-weight: 600; cursor: pointer; }
+
+        /* --- Ads & Policy --- */
+        .info-card { background: white; margin: 10px; padding: 15px; border-radius: 10px; border-left: 5px solid var(--primary-purple); }
+        .info-card h4 { color: var(--primary-purple); margin-bottom: 10px; font-size: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .policy-text { font-size: 12px; color: #555; line-height: 1.6; text-align: justify; }
+        .policy-text.en { font-style: italic; border-top: 1px dashed #ccc; margin-top: 10px; padding-top: 10px; }
+
+        /* --- Application Cards --- */
+        .apply-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px; }
+        .apply-card { padding: 15px; border-radius: 12px; color: white; text-align: center; position: relative; overflow: hidden; }
+        .gold-card { background: linear-gradient(135deg, #f3b64d, #b8860b); }
+        .crown-card { background: linear-gradient(135deg, #a332c3, #6a0d83); }
+        .apply-card h5 { font-size: 14px; margin-bottom: 5px; }
+        .apply-card button { background: white; border: none; padding: 5px 12px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-top: 8px; cursor: pointer; }
+
+        /* --- Global Bottom Nav --- */
+        .bottom-nav { 
+            position: fixed; bottom: 0; width: 100%; height: 65px; 
+            background: white; display: flex; justify-content: space-around; 
+            align-items: center; border-top: 1px solid #ddd; z-index: 2000;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #65676b; }
+        .nav-item img { width: 24px; height: 24px; margin-bottom: 3px; }
+        .nav-item span { font-size: 10px; }
+        .nav-item.active { display: none; }
+
+        /* Feedbacks */
+        .feedback-container { background: white; margin: 10px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+        .feedback-container h4 { font-size: 15px; color: var(--primary-purple); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; justify-content: center;}
+        .feedback-input { 
+            width: 100%; height: 90px; padding: 12px; border-radius: 10px; 
+            border: 1px solid #ddd; background: #f9f9f9; outline: none; 
+            resize: none; font-size: 14px; margin-bottom: 10px;
+        }
+        .feedback-footer { justify-content: center ; align-items: center; }
+        .feedback-btn { 
+            background: var(--primary-purple); color: white; border: none; 
+            padding: 8px 22px; border-radius: 20px; font-weight: bold; 
+            cursor: pointer; font-size: 13px;
+        }
+        /* Media Upload Section */
+.media-preview-container {
+    margin-top: 10px;
+    display: none; /* ပုံရွေးပြီးမှ ပြမည် */
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #eee;
+}
+.media-preview-container img, .media-preview-container video {
+    width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+}
+.remove-media {
+    position: absolute; top: 5px; right: 5px;
+    background: rgba(0,0,0,0.7); color: white;
+    border: none; border-radius: 50%; width: 25px; height: 25px;
+    cursor: pointer; font-weight: bold;
+}
+
+/* Download Permission Toggle */
+.download-opt {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px; background: #f9f9f9; border-radius: 8px; margin-top: 10px;
+    font-size: 13px; color: #555;
+}
+/* Switch အလှဆင်ခြင်း */
+.switch {
+    position: relative; display: inline-block; width: 40px; height: 20px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background-color: #ccc; transition: .4s; border-radius: 20px;
+}
+.slider:before {
+    position: absolute; content: ""; height: 16px; width: 16px;
+    left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%;
+}
+input:checked + .slider { background-color: var(--primary-purple); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+    </style>
+</head>
+<body>
+
+    <header class="global-header">
+    <div class="logo">
+        <div class="e-box"><span class="e-letter">E</span></div>
+        <div class="logo-text">m        </div>
+    </div>
+        <div class="header-tools" style="font-size: 27px;">
+
+                   <a href="sug.html">👥</a>
+        <a href="noti.html">🔔</a>
+                        <button style="font-size: 20px;color: purple;" onclick="alert('မြန်မာဘာသာသို့ ပြောင်းလဲနေသည်...')">EN/မြန်</button>
+
+        </div>
+    </header>
+
+    <div class="profile-header">
+        <div class="cover-area">
+            <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80" id="userCover">
+            <label for="coverInput" class="edit-cover-btn">📷 Edit Cover</label>
+            <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="uploadToImgBB(this, 'avatar')">
+
+<input type="file" id="coverInput" accept="image/*" style="display:none" onchange="uploadToImgBB(this, 'cover')">
+
+      </div>
+        
+        <div class="avatar-area">
+            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" id="userAvatar">
+            <label for="avatarInput" class="edit-avatar-btn">Edit</label>
+            <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="previewImage(this, 'userAvatar')">
+        </div>
+        
+        <div class="profile-basic-info">
+            <div class="user-name-row">
+                <span id="profileName">Loading...</span>
+                <span class="tier-badge badge-normal">Normal User</span>
+            </div>
+            <p style="font-size: 13px; color: #666; margin-top: 5px;">"Sharing knowledge for a better community"</p>
+        </div>
+    </div>
+<div class="post-box">
+    <div class="post-input-area">
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" id="postBoxAvatar" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover;">
+        <input type="text" id="postContent" placeholder="ဘာတွေမျှဝေချင်လဲ...?">
+    </div>
+
+    <div id="mediaPreviewBox" class="media-preview-container">
+        <button class="remove-media" onclick="clearMedia()">×</button>
+        <div id="mediaDisplay"></div>
+    </div>
+
+    <div class="download-opt">
+        <span>📥 သူတစ်ပါးကို Download ခွင့်ပြုမည်</span>
+        <label class="switch">
+            <input type="checkbox" id="allowDownload" checked>
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="post-actions">
+        <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none" onchange="handleMediaSelect(this)">
+        
+        <div class="act-btn" onclick="document.getElementById('mediaInput').click()">🖼️ Photo/Video</div>
+        <div class="act-btn" onclick="uploadPost()" style="color: var(--primary-purple); font-weight: bold;">🌎 Post တင်မည်</div>
+    </div>
+</div>
+
+
+    <div class="apply-grid">
+        <div class="apply-card gold-card">
+            <h5>ရွှေရောင် $ အကောင့်</h5>
+            <p style="font-size: 10px;">Apply for Gold Tier</p>
+           <a href="gold.html"><button
+          >လျှောက်ထားရန်</button></a>
+        </div>
+        <div class="apply-card crown-card">
+            <h5>ခရမ်းရောင် Crown</h5>
+            <p style="font-size: 10px;">Lifetime Membership</p>
+           <a href="purple.html">
+               <button>လျှောက်ထားရန်</button></a>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <h4>📢 App Policy & Guarantees</h4>
+        <div class="policy-text">
+            (မြန်မာ) ဤ App သည် ဘက်လိုက်ခြင်းမရှိသော Social Media ဖြစ်ပါသည်။ နိုင်ငံအတွင်း သတင်းမှန်များရရှိရေး၊ ပညာရေး၊ ကျန်းမာရေး၊ စိုက်ပျိုးရေးနှင့် လူမှုရေးဗဟုသုတများ မျှဝေရန် ရည်ရွယ်ပါသည်။ အသုံးပြုသူတိုင်း၏ Data ကို ပေါက်ကြားမှုမရှိစေရန် အာမခံပါသည်။ 
+            <br>• <b>Normal:</b> 30MB Media, 3000+ Suggestions.
+            <br>• <b>Gold ($):</b> 100MB Media, 4000+ Suggestions, Livestream (No Replay), Business Posts.
+            <br>• <b>Crown (👑):</b> 100MB Media, 10000+ Suggestions, Lifetime Access.
+            <br>⚠️ လူမျိုးရေး၊ ဘာသာရေး အမုန်းစကားများ လုံးဝ(လုံးဝ) ခွင့်မပြုပါ။ Likes 1000 မပြည့်သော Video များကို ၁ နှစ်အကြာတွင် Auto ဖျက်သိမ်းပါမည်။
+        </div>
+        <div class="policy-text en">
+            (English) EmotioN is a neutral social platform for sharing authentic news, education, health, and social knowledge. We guarantee user data privacy. Hate speech regarding race or religion is strictly prohibited. Videos with less than 1000 likes will be auto-deleted after one year.
+        </div>
+    </div>
+
+    <div class="feedback-container">
+        <h4 style="text-align: center; width: 100%; margin-bottom: 12px;">📝 App Feedback ပေးရန်</h4>
+        <textarea id="feedbackMsg" class="feedback-input" placeholder="App အသုံးပြုရတာ အဆင်ပြေရဲ့လား? အကြံပြုချက်များ ရေးပေးပါ..."></textarea>
+        <div class="feedback-footer" style="text-align: center;">
+            <button class="feedback-btn" onclick="submitFeedback()">ပို့မည်</button>
+        </div>
+    </div>
+
+    <div class="feedback-area" style="text-align: center;">
+        <span class="view-feedback-btn" style="color: var(--primary-purple); font-size: 12px; cursor: pointer;" onclick="window.location.href='all_feedbacks.html'">View All App Feedbacks</span>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="user.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/1946/1946488.png"><span>User</span>
+        </a>
+        <a href="group.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/615/615075.png"><span>Group</span>
+        </a>
+        <a href="chat.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/589/589708.png"><span>Chat</span>
+        </a>
+        <a href="live.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/4404/4404094.png"><span>Live</span>
+        </a>
+        <a href="profile.html" class="nav-item active">
+            <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png"><span>Profile</span>
+        </a>
+    </nav>
+
+<script>
+    function initProfileUI() {
+        const storedName = localStorage.getItem('chat_user_name');
+        const profileNameEl = document.getElementById('profileName');
+
+        if (!storedName) {
+            window.location.replace("index.html");
+            return;
+        }
+
+        if (profileNameEl) {
+            profileNameEl.innerText = storedName;
+        }
+        
+        // သိမ်းထားတဲ့ ပုံတွေကို ပြန်ဖော်တာ
+        const savedAvatar = localStorage.getItem('userAvatar');
+        if(savedAvatar) {
+            document.getElementById('userAvatar').src = savedAvatar;
+            if(document.getElementById('postBoxAvatar')) {
+                document.getElementById('postBoxAvatar').src = savedAvatar;
+            }
+        }
+
+        const savedCover = localStorage.getItem('userCover');
+        if(savedCover) {
+            document.getElementById('userCover').src = savedCover;
+        }
+    }
+
+    // ပုံရွေးလိုက်ရင် ချက်ချင်းပြောင်းပေးပြီး သိမ်းထားတဲ့ function
+
+                // Avatar ဆိုရင် အောက်က Post Box က ပုံလေးပါ လိုက်ပြောင်းတယ်
+                if(targetId === 'userAvatar') {
+                    const postBoxImg = document.getElementById('postBoxAvatar');
+                    if(postBoxImg) postBoxImg.src = e.target.result;
+                }
+                
+                // Browser မှာ သိမ်းထားလိုက်တယ် (Refresh လုပ်ရင် မပျောက်အောင်)
+                localStorage.setItem(targetId, e.target.result);
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+
+    document.addEventListener('DOMContentLoaded', initProfileUI);
+// Media ဖိုင်ရွေးချယ်မှုကို လက်ခံပြီး Preview ပြသခြင်း
+function handleMediaSelect(input) {
+    const previewBox = document.getElementById('mediaPreviewBox');
+    const display = document.getElementById('mediaDisplay');
+    const file = input.files[0];
+
+    if (file) {
+        display.innerHTML = ""; // အဟောင်းကို ဖျက်
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            previewBox.style.display = "block";
+            if (file.type.startsWith('image/')) {
+                display.innerHTML = `<img src="${e.target.result}" id="previewImg">`;
+            } else if (file.type.startsWith('video/')) {
+                display.innerHTML = `<video src="${e.target.result}" controls id="previewVid"></video>`;
+            }
+        }
+        reader.readAsDataURL(file);
+    }
+}
+
+// Media ကို ပြန်ဖျက်ခြင်း
+function clearMedia() {
+    document.getElementById('mediaInput').value = "";
+    document.getElementById('mediaPreviewBox').style.display = "none";
+    document.getElementById('mediaDisplay').innerHTML = "";
+}
+
+// Post တင်သည့် Function
+function uploadPost() {
+    const text = document.getElementById('postContent').value;
+    const media = document.getElementById('mediaInput').files[0];
+    const isDownloadable = document.getElementById('allowDownload').checked;
+
+    if (!text && !media) {
+        alert("စာသား (သို့) Media တစ်ခုခု ထည့်ပေးပါ။");
+        return;
+    }
+
+    // တင်မည့် အချက်အလက်များကို Console မှာ အရင်စစ်ကြည့်နိုင်သည်
+    console.log("Post Text:", text);
+    console.log("Media File:", media ? media.name : "No media");
+    console.log("Allow Download:", isDownloadable);
+
+    alert("တင်နေပါပြီ... ခေတ္တစောင့်ပါ။\n(Download ခွင့်ပြုချက်: " + (isDownloadable ? "Yes" : "No") + ")");
+    
+    // အကုန်တင်ပြီးပါက Reset လုပ်ခြင်း
+    document.getElementById('postContent').value = "";
+    clearMedia();
+}
+async function uploadPost() {
+    const text = document.getElementById('postContent').value.trim();
+    const file = document.getElementById('mediaInput').files[0];
+    const isDownloadable = document.getElementById('allowDownload').checked;
+    const btn = document.querySelector('.act-btn[onclick*="uploadPost"]');
+
+    if (!text && !file) return alert("စာသား (သို့) ပုံ တစ်ခုခု ထည့်ပါ။");
+
+    btn.innerText = "တင်နေသည်...";
+    btn.style.pointerEvents = "none";
+
+    try {
+        let mediaUrl = "";
+        let mediaType = "none";
+
+        if (file) {
+            const fileName = Date.now() + "_" + file.name.replace(/\s+/g, "_");
+            // Video ဆိုရင် Bunny.net တင်မယ်
+            if (file.type.startsWith("video")) {
+                await fetch(`https://sg.storage.bunnycdn.com/${BUNNY_STORAGE}/${fileName}`, {
+                    method: "PUT",
+                    headers: { "AccessKey": BUNNY_KEY },
+                    body: file
+                });
+                mediaUrl = `https://public-hospitals.b-cdn.net/${fileName}`;
+                mediaType = "video";
+            } 
+            // ပုံဆိုရင် ImgBB တင်မယ်
+            else {
+                const fd = new FormData();
+                fd.append("image", file);
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
+                    method: "POST",
+                    body: fd
+                });
+                const d = await res.json();
+                mediaUrl = d.data.url;
+                mediaType = "image";
+            }
+        }
+
+        // Database ထဲသို့ သိမ်းခြင်း
+        await db.collection("health_posts").add({
+            author: localStorage.getItem('chat_user_name') || "Unknown User",
+            text: text,
+            mediaUrl: mediaUrl,
+            mediaType: mediaType,
+            allowDownload: isDownloadable,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        alert("Post တင်ခြင်း အောင်မြင်ပါသည်။");
+        location.reload();
+
+    } catch (e) {
+        console.error(e);
+        alert("အမှားတစ်ခု ဖြစ်သွားသည်- " + e.message);
+    }
+}
+async function submitFeedback() {
+    const msg = document.getElementById('feedbackMsg').value;
+    if(!msg.trim()) return alert("စာသားရေးပါ။");
+
+    try {
+        await db.collection("app_feedback").add({
+            userName: localStorage.getItem('chat_user_name'),
+            feedback: msg,
+            createdAt: Date.now()
+        });
+        alert("ကျေးဇူးတင်ပါတယ်။ သိမ်းဆည်းပြီးပါပြီ။");
+        document.getElementById('feedbackMsg').value = "";
+    } catch (e) { alert("Error: " + e.message); }
+}
+// --- ပုံကို ImgBB သို့ တင်ပြီး Firebase တွင် သိမ်းခြင်း ---
+async function uploadToImgBB(input, type) {
+    if (!input.files || !input.files[0]) return;
+    
+    const file = input.files[0];
+    const targetImgId = (type === 'avatar') ? 'userAvatar' : 'userCover';
+    const displayImg = document.getElementById(targetImgId);
+    
+    // ၁။ UI မှာ အရင်ပြထားမယ် (Loading ပြတဲ့ သဘော)
+    displayImg.style.opacity = "0.5";
+    
+    const fd = new FormData();
+    fd.append("image", file);
+
+    try {
+        // ၂။ ImgBB API သို့ ပို့ခြင်း
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
+            method: "POST",
+            body: fd
+        });
+        const data = await res.json();
+        
+        if (!data.success) throw new Error("Upload failed");
+
+        const permanentUrl = data.data.url; // ImgBB ကပေးတဲ့ အမြဲတမ်း Link
+
+        // ၃။ Firebase Firestore တွင် သိမ်းခြင်း
+        const user = auth.currentUser;
+        if (user) {
+            const userRef = db.collection("users").doc(user.uid);
+            
+            // Database မှာ field ခွဲသိမ်းမယ်
+            const updateData = {};
+            if (type === 'avatar') {
+                updateData.photoURL = permanentUrl;
+                // Auth Profile ကိုပါ update လုပ်ပေးခြင်း
+                await user.updateProfile({ photoURL: permanentUrl });
+            } else {
+                updateData.coverURL = permanentUrl;
+            }
+
+            await userRef.set(updateData, { merge: true });
+
+            // ၄။ UI ကို အချောသပ်ပြင်ခြင်း
+            displayImg.src = permanentUrl;
+            displayImg.style.opacity = "1";
+            
+            if (type === 'avatar' && document.getElementById('postBoxAvatar')) {
+                document.getElementById('postBoxAvatar').src = permanentUrl;
+            }
+            
+            alert("ပုံကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။");
+        } else {
+            alert("Login အရင်ဝင်ပေးပါ။");
+        }
+
+    } catch (e) {
+        console.error(e);
+        displayImg.style.opacity = "1";
+        alert("Upload လုပ်ရာတွင် အမှားရှိနေပါသည်- " + e.message);
+    }
+}
+
+// --- Page စဖွင့်ချိန်မှာ Database ကပုံကို ပြန်ဆွဲတင်ခြင်း ---
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        const doc = await db.collection("users").doc(user.uid).get();
+        if (doc.exists) {
+            const data = doc.data();
+            if (data.photoURL) {
+                document.getElementById('userAvatar').src = data.photoURL;
+                if(document.getElementById('postBoxAvatar')) document.getElementById('postBoxAvatar').src = data.photoURL;
+            }
+            if (data.coverURL) {
+                document.getElementById('userCover').src = data.coverURL;
+            }
+        }
+        // နာမည်ပြခြင်း
+        document.getElementById('profileName').innerText = user.displayName || "User";
+    }
+});
+
+</script>
+</body>
+</html>
