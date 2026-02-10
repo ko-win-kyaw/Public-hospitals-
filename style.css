@@ -1,0 +1,361 @@
+:root { 
+    --primary: #800080; 
+    --bg: #f0f2f5; 
+    --pinned: #fff9c4; 
+}
+
+body { 
+    font-family: sans-serif; 
+    background: var(--bg); 
+    margin: 0; 
+    padding-bottom: 50px; 
+}
+
+.header { 
+    background: var(--primary); 
+    color: white; 
+    padding: 12px 15px; 
+    position: sticky; 
+    top: 0; 
+    z-index: 1000; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+
+.container { 
+    max-width: 500px; 
+    margin: auto; 
+    padding: 10px; 
+}
+
+.card { 
+    background: white; 
+    border-radius: 12px; 
+    padding: 15px; 
+    margin-bottom: 15px; 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+    position: relative; 
+}
+
+.card.pinned { 
+    border: 2px solid #ffd700; 
+    background: var(--pinned); 
+}
+
+.stat-grid { 
+    display: grid; 
+    grid-template-columns: repeat(5, 1fr); 
+    gap: 5px; 
+    margin-top: 10px; 
+}
+
+.stat-item { 
+    font-size: 11px; 
+    background: #f8f9fa; 
+    padding: 5px; 
+    border-radius: 5px; 
+    text-align: center; 
+}
+
+textarea { 
+    width: 100%; 
+    border: 1px solid #ddd; 
+    border-radius: 8px; 
+    padding: 12px; 
+    box-sizing: border-box; 
+    resize: none; 
+    font-size: 15px; 
+    background: #f5f6f7; 
+    outline: none; 
+}
+
+.btn-post { 
+    background: var(--primary); 
+    color: white; 
+    border: none; 
+    padding: 10px; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-weight: bold; 
+}
+
+.upload-label {
+    padding: 8px 12px; 
+    background: #eee; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-size: 12px;
+}
+
+.google-login-btn {
+    background:#4285F4; 
+    color:white; 
+    border:none; 
+    padding:6px 10px; 
+    border-radius:4px; 
+    font-size:11px; 
+    cursor:pointer;
+}
+
+.action-bar { 
+    display: flex; 
+    border-top: 1px solid #eee; 
+    margin-top: 10px; 
+    padding-top: 10px; 
+    justify-content: space-around; 
+}
+
+.action-btn { 
+    background: none; 
+    border: none; 
+    color: #65676b; 
+    cursor: pointer; 
+    font-size: 13px; 
+    font-weight: 600; 
+}
+
+.comment-item { 
+    background: #f0f2f5; 
+    border-radius: 10px; 
+    padding: 10px; 
+    margin-bottom: 8px; 
+    font-size: 13px; 
+}
+
+.comment-react-bar { 
+    display: flex; 
+    gap: 15px; 
+    margin-top: 5px; 
+    font-size: 11px; 
+    color: #65676b; 
+}
+
+.rating-stars { 
+    font-size: 25px; 
+    color: #ddd; 
+    cursor: pointer; 
+    display: flex; 
+    gap: 5px; 
+    justify-content: center; 
+    margin-bottom: 10px; 
+}
+
+.rating-stars span.active { 
+    color: #ffc107; 
+}
+
+.admin-badge { 
+    background: #ffd700; 
+    color: #000; 
+    padding: 2px 8px; 
+    border-radius: 10px; 
+    font-size: 10px; 
+    font-weight: bold; 
+}
+        :root {
+            --primary-purple: #800080;
+            --gold: #f3b64d;
+            --crown-purple: #a332c3;
+            --text-dark: #333;
+            --bg-light: #f0f2f5;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background-color: var(--bg-light); padding-top: 70px; padding-bottom: 80px; }
+
+        /* --- Global Header --- */
+        .global-header {
+            position: fixed; top: 0; width: 100%; height: 65px;
+            background: var(--primary-purple); display: flex;
+            justify-content: space-between; align-items: center;
+            padding: 0 15px; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+/* --- 2. Header Section --- */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%; /* ပြင်ဆင်ထားခြင်း */
+    height: 85px;
+    padding: 0 15px;
+    background-color: #800080;
+    position: fixed;
+    top: 0;
+    left: 0; /* ပြင်ဆင်ထားခြင်း */
+    z-index: 1000;
+    border-radius: 15px; /* ပြင်ဆင်ထားခြင်း - ထောင့်များကွေးစေရန် */
+}
+
+
+.logo { display: flex; align-items: center; }
+.e-box {
+    width: 50px; height: 50px;
+    position: relative;
+    display: flex; justify-content: center; align-items: center;
+}
+.e-box::before {
+    content: ""; position: absolute; inset: 0;
+    border: 3px solid white; border-right: none;
+    border-radius: 8px 15px 15px 8px;
+    box-shadow: 0 0 8px #ffcc70;
+}
+.e-letter { font-size: 33px; font-weight: 800; color: #f3b64d; }
+.logo-text { font-size: 28px; font-weight: 700; color: white; margin-left: -10px; }
+ .header-tools { display: flex; gap: 18px; align-items: center; }
+        .header-tools img { width: 24px; height: 24px; filter: invert(1); cursor: pointer; }
+
+        /* --- Profile Cover & Avatar --- */
+        .profile-header { background: white; position: relative; margin-bottom: 15px; height: auto; }
+        .cover-area { width: 100%; height: 180px; background: #ddd; position: relative; }
+        .cover-area img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Edit Cover ခလုတ် */
+        .edit-cover-btn { 
+            position: absolute; bottom: 10px; right: 10px; 
+            background: rgba(0,0,0,0.6); color: white; 
+            padding: 5px 10px; border-radius: 5px; 
+            font-size: 12px; cursor: pointer; z-index: 110; 
+        }
+        
+        .avatar-area { 
+            position: absolute; 
+            bottom: 15px; 
+            left: 20px; 
+            width: 110px; 
+            height: 110px; 
+            border-radius: 50%; 
+            border: 4px solid white; 
+            background: #eee; 
+            overflow: hidden;
+            z-index: 100;
+        }
+        .avatar-area img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Edit Avatar ခလုတ် - အခု သေချာမြင်ရအောင် လုပ်ထားပါတယ် */
+        .edit-avatar-btn { 
+    position: absolute; 
+    bottom: 0;           /* အပေါ် (top) ကနေ အောက် (bottom) ကို ပြောင်းလိုက်တာပါ */
+    left: 0;
+    width: 100%; 
+    background: rgba(0, 0, 0, 0.5); /* ခပ်မှောင်မှောင် အရောင်လေးနဲ့ ပိုပေါ်အောင် လုပ်ထားပါတယ် */
+    color: white; 
+    font-size: 10px;    /* စာသားကို ခပ်သေးသေး ပြောင်းလိုက်ပါတယ် */
+    text-align: center; 
+    padding: 3px 0;     /* အပေါ်အောက် အကွာအဝေးကို နည်းနည်းလျှော့လိုက်ပါတယ် */
+    cursor: pointer; 
+    z-index: 105; 
+    font-weight: bold;
+    text-transform: uppercase; /* စာလုံးကြီးနဲ့ ပိုသေသပ်အောင် လုပ်တာပါ */
+}
+
+
+        /* Profile နာမည် Alignment */
+        .profile-basic-info { 
+            padding: 10px 20px 20px 145px; 
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .user-name-row { display: flex; align-items: center; gap: 10px; }
+        #profileName { font-size: 22px; font-weight: bold; color: var(--text-dark); }
+        .tier-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .badge-normal { background: #e0e0e0; color: #666; }
+
+        /* --- Wall / Post Area --- */
+        .post-box { background: white; margin: 10px; padding: 15px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .post-input-area { display: flex; gap: 10px; align-items: center; }
+        .post-input-area input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; background: #f0f2f5; outline: none; }
+        .post-actions { display: flex; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; justify-content: space-around; }
+        .act-btn { font-size: 13px; color: #65676b; font-weight: 600; cursor: pointer; }
+
+        /* --- Ads & Policy --- */
+        .info-card { background: white; margin: 10px; padding: 15px; border-radius: 10px; border-left: 5px solid var(--primary-purple); }
+        .info-card h4 { color: var(--primary-purple); margin-bottom: 10px; font-size: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .policy-text { font-size: 12px; color: #555; line-height: 1.6; text-align: justify; }
+        .policy-text.en { font-style: italic; border-top: 1px dashed #ccc; margin-top: 10px; padding-top: 10px; }
+
+        /* --- Application Cards --- */
+        .apply-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px; }
+        .apply-card { padding: 15px; border-radius: 12px; color: white; text-align: center; position: relative; overflow: hidden; }
+        .gold-card { background: linear-gradient(135deg, #f3b64d, #b8860b); }
+        .crown-card { background: linear-gradient(135deg, #a332c3, #6a0d83); }
+        .apply-card h5 { font-size: 14px; margin-bottom: 5px; }
+        .apply-card button { background: white; border: none; padding: 5px 12px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-top: 8px; cursor: pointer; }
+
+        /* --- Global Bottom Nav --- */
+        .bottom-nav { 
+            position: fixed; bottom: 0; width: 100%; height: 65px; 
+            background: white; display: flex; justify-content: space-around; 
+            align-items: center; border-top: 1px solid #ddd; z-index: 2000;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #65676b; }
+        .nav-item img { width: 24px; height: 24px; margin-bottom: 3px; }
+        .nav-item span { font-size: 10px; }
+        .nav-item.active { display: none; }
+
+        /* Feedbacks */
+        .feedback-container { background: white; margin: 10px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+        .feedback-container h4 { font-size: 15px; color: var(--primary-purple); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; justify-content: center;}
+        .feedback-input { 
+            width: 100%; height: 90px; padding: 12px; border-radius: 10px; 
+            border: 1px solid #ddd; background: #f9f9f9; outline: none; 
+            resize: none; font-size: 14px; margin-bottom: 10px;
+        }
+        .feedback-footer { justify-content: center ; align-items: center; }
+        .feedback-btn { 
+            background: var(--primary-purple); color: white; border: none; 
+            padding: 8px 22px; border-radius: 20px; font-weight: bold; 
+            cursor: pointer; font-size: 13px;
+        }
+        /* Media Upload Section */
+.media-preview-container {
+    margin-top: 10px;
+    display: none; /* ပုံရွေးပြီးမှ ပြမည် */
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #eee;
+}
+.media-preview-container img, .media-preview-container video {
+    width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+}
+.remove-media {
+    position: absolute; top: 5px; right: 5px;
+    background: rgba(0,0,0,0.7); color: white;
+    border: none; border-radius: 50%; width: 25px; height: 25px;
+    cursor: pointer; font-weight: bold;
+}
+
+/* Download Permission Toggle */
+.download-opt {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px; background: #f9f9f9; border-radius: 8px; margin-top: 10px;
+    font-size: 13px; color: #555;
+}
+/* Switch အလှဆင်ခြင်း */
+.switch {
+    position: relative; display: inline-block; width: 40px; height: 20px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background-color: #ccc; transition: .4s; border-radius: 20px;
+}
+.slider:before {
+    position: absolute; content: ""; height: 16px; width: 16px;
+    left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%;
+}
+input:checked + .slider { background-color: var(--primary-purple); }
+input:checked + .slider:before { transform: translateX(20px); }
