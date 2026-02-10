@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile & Wall</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+  authDomain: "hospital-app-caf85.firebaseapp.com",
+  projectId: "hospital-app-caf85"
+});
+const db = firebase.firestore();
+</script>
+
+<style>
+body{
+  margin:0;
+  background:var(--bg);
+  padding-top:35px; /* ⭐ header height နဲ့ တူရမယ် */
+}
+:root{--purple:#800080;--bg:#f0f2f5}
+*{box-sizing:border-box;font-family:sans-serif}
+body{margin:0;background:var(--bg)}
+
+.profile-card{background:#fff}
+
+/* ✅ COVER */
+.cover-photo{
+  position:relative;
+  height:180px;
+  background:#ddd;
+  overflow:hidden;
+}
+.cover-photo img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+/* ✅ COVER BUTTON */
+.cover-btn{
+  position:absolute;
+  bottom:10px;
+  right:10px;
+  background:rgba(0,0,0,.65);
+  color:#fff;
+  padding:7px 14px;
+  border-radius:20px;
+  font-size:12px;
+  cursor:pointer;
+  z-index:5;
+}
+
+/* PROFILE */
+.profile-row{
+  display:flex;
+  align-items:flex-end;
+  padding:0 15px;
+  margin-top:-45px;
+}
+.avatar-box{
+  width:95px;
+  height:95px;
+  position:relative;
+}
+.avatar-box img{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  border:4px solid #fff;
+  background:#eee;
+}
+.cam-icon{
+  position:absolute;
+  bottom:5px;
+  right:0;
+  background:var(--purple);
+  color:#fff;
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:13px;
+  cursor:pointer;
+}
+
+.user-name{font-size:20px;font-weight:bold}
+
+/* POST */
+.post-box{
+  background:#fff;
+  margin:12px;
+  padding:15px;
+  border-radius:14px;
+}
+.post-input{
+  width:100%;
+  padding:12px;
+  border-radius:20px;
+  border:1px solid #ddd;
+  background:#f0f2f5;
+}
+.btn-post{
+  margin-top:10px;
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:25px;
+  background:var(--purple);
+  color:#fff;
+  font-weight:bold;
+}
+        .global-header {
+            position: fixed; top: 0; width: 100%; height: 65px;
+            background-color: purple; display: flex;
+            justify-content: space-between; align-items: center;
+            padding: 0 15px; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+/* --- 2. Header Section --- */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%; /* ပြင်ဆင်ထားခြင်း */
+    height: 85px;
+    padding: 0 15px;
+    background-color: #800080;
+    position: fixed;
+    top: 0;
+    left: 0; /* ပြင်ဆင်ထားခြင်း */
+    z-index: 1000;
+    border-radius: 15px; /* ပြင်ဆင်ထားခြင်း - ထောင့်များကွေးစေရန် */
+}
+
+
+.logo { display: flex; align-items: center; }
+.e-box {
+    width: 50px; height: 50px;
+    position: relative;
+    display: flex; justify-content: center; align-items: center;
+}
+.e-box::before {
+    content: ""; position: absolute; inset: 0;
+    border: 3px solid white; border-right: none;
+    border-radius: 8px 15px 15px 8px;
+    box-shadow: 0 0 8px #ffcc70;
+}
+.e-letter { font-size: 33px; font-weight: 800; color: #f3b64d; }
+.logo-text { font-size: 28px; font-weight: 700; color: white; margin-left: -10px; }
+ .header-tools { display: flex; gap: 18px; align-items: center; }
+        .header-tools img { width: 24px; height: 24px; filter: invert(1); cursor: pointer; }
+
+</style>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+      <header class="global-header">
+        <div class="logo">
+            <div class="e-box"><span class="e-letter">E</span></div>
+            <div class="logo-text">m</div>
+        </div>
+        <div class="header-tools" style="font-size: 27px;">
+            <a href="sug.html">👥</a>
+            <a href="noti.html">🔔</a>
+            <button style="font-size: 20px;color: purple;" onclick="alert('မြန်မာဘာသာသို့ ပြောင်းလဲနေသည်...')">EN/မြန်</button>
+        </div>
+    </header><br>
+
+   
+
+<div class="profile-card">
+
+  <!-- ✅ COVER -->
+  <div class="cover-photo">
+    <img id="userCover">
+    <label for="coverIn" class="cover-btn">📷 Change Cover</label>
+    <input type="file" id="coverIn" hidden onchange="changeMedia(this,'cover')">
+  </div>
+
+  <!-- PROFILE -->
+  <div class="profile-row">
+    <div class="avatar-box">
+      <img id="userAvatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+      <label for="avatarIn" class="cam-icon">📷</label>
+      <input type="file" id="avatarIn" hidden onchange="changeMedia(this,'avatar')">
+    </div>
+    <div style="margin-left:15px">
+      <div class="user-name" id="profileName">Loading...</div>
+      <div style="font-size:12px;color:gray">Normal User</div>
+    </div>
+  </div>
+
+</div>
+        <div class="card">
+            <textarea id="postContent" rows="3" placeholder=" ဗဟုသုတများ မျှဝေပါ..." style="width:100%; border-radius:8px; padding:10px; border:1px solid #ddd;"></textarea>
+            <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+                <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" onchange="previewMedia(this)">
+                <div style="background-color: #f33;
+                width:100%;color: #fff;border-radius: 8px; text-align: center;">
+                    🇲🇲👋 ဗီဒီယို 20mb သာတင်လို့ရ
+                    ပါသည်🙏
+                </div>
+                <label for="mediaInput" class="upload-label" style="background:#eee; padding:10px; border-radius:5px; cursor:pointer; flex:1; text-align:center;">📷 ပုံ/ဗီဒီယို ရွေးရန်</label>
+                <button id="btnPost" class="btn-post" style="flex:1; margin:0;" onclick="uploadAndPost()">တင်မည်</button>
+            </div>
+            <!-- 🔽 POSTS LIST -->
+<div id="postsContainer" style="padding:10px;"></div>
+            <div id="mediaPreviewBox" style="margin-top:10px; display:none; text-align:center;"></div>
+        </div>
+
+    <div class="apply-grid">
+        <div class="apply-card gold-card">
+            <h5>ရွှေရောင် $ အကောင့်</h5>
+            <p style="font-size: 10px;">Apply for Gold Tier</p>
+           <a href="gold.html"><button
+          >လျှောက်ထားရန်</button></a>
+        </div>
+        <div class="apply-card crown-card">
+            <h5>ခရမ်းရောင် Crown</h5>
+            <p style="font-size: 10px;">Lifetime Membership</p>
+           <a href="purple.html">
+               <button>လျှောက်ထားရန်</button></a>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <h4>📢 App Policy & Guarantees</h4>
+        <div class="policy-text">
+            (မြန်မာ) ဤ App သည် ဘက်လိုက်ခြင်းမရှိသော Social Media ဖြစ်ပါသည်။ နိုင်ငံအတွင်း သတင်းမှန်များရရှိရေး၊ ပညာရေး၊ ကျန်းမာရေး၊ စိုက်ပျိုးရေးနှင့် လူမှုရေးဗဟုသုတများ မျှဝေရန် ရည်ရွယ်ပါသည်။ အသုံးပြုသူတိုင်း၏ Data ကို ပေါက်ကြားမှုမရှိစေရန် အာမခံပါသည်။ 
+            <br>• <b>Normal:</b> 30MB Media, 3000+ Suggestions.
+            <br>• <b>Gold ($):</b> 100MB Media, 4000+ Suggestions, Livestream (No Replay), Business Posts.
+            <br>• <b>Crown (👑):</b> 100MB Media, 10000+ Suggestions, Lifetime Access.
+            <br>⚠️ လူမျိုးရေး၊ ဘာသာရေး အမုန်းစကားများ လုံးဝ(လုံးဝ) ခွင့်မပြုပါ။ Likes 1000 မပြည့်သော Video များကို ၁ နှစ်အကြာတွင် Auto ဖျက်သိမ်းပါမည်။
+        </div>
+        <div class="policy-text en">
+            (English) EmotioN is a neutral social platform for sharing authentic news, education, health, and social knowledge. We guarantee user data privacy. Hate speech regarding race or religion is strictly prohibited. Videos with less than 1000 likes will be auto-deleted after one year.
+        </div>
+    </div>
+
+    <div class="feedback-container">
+        <h4 style="text-align: center; width: 100%; margin-bottom: 12px;">📝 App Feedback ပေးရန်</h4>
+        <textarea id="feedbackMsg" class="feedback-input" placeholder="App အသုံးပြုရတာ အဆင်ပြေရဲ့လား? အကြံပြုချက်များ ရေးပေးပါ..."></textarea>
+        <div class="feedback-footer" style="text-align: center;">
+            <button class="feedback-btn" onclick="submitFeedback()">ပို့မည်</button>
+        </div>
+    </div>
+
+    <div class="feedback-area" style="text-align: center;">
+        <span class="view-feedback-btn" style="color: var(--primary-purple); font-size: 12px; cursor: pointer;" onclick="window.location.href='all_feedbacks.html'">View All App Feedbacks</span>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="user.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/1946/1946488.png"><span>User</span>
+        </a>
+        <a href="group.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/615/615075.png"><span>Group</span>
+        </a>
+        <a href="chat.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/589/589708.png"><span>Chat</span>
+        </a>
+        <a href="live.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/4404/4404094.png"><span>Live</span>
+        </a>
+        <a href="profile.html" class="nav-item active">
+            <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png"><span>Profile</span>
+        </a>
+    </nav>
+
+<script>
+function init(){
+  profileName.innerText =
+    localStorage.getItem("chat_user_name") || "မောင့်အချစ်";
+
+  userCover.src =
+    localStorage.userCover ||
+    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=60";
+
+  if(localStorage.userAvatar)
+    userAvatar.src = localStorage.userAvatar;
+}
+
+function changeMedia(input,type){
+  if(!input.files[0]) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    if(type==="cover"){
+      userCover.src=e.target.result;
+      localStorage.userCover=e.target.result;
+    }else{
+      userAvatar.src=e.target.result;
+      localStorage.userAvatar=e.target.result;
+    }
+  };
+  r.readAsDataURL(input.files[0]);
+}
+
+window.onload=init;
+</script>
+<script>
+function loadPosts(){
+  db.collection("posts")
+    .orderBy("time","desc")
+    .onSnapshot(snap=>{
+      postsContainer.innerHTML = "";
+      snap.forEach(doc=>{
+        const p = doc.data();
+        postsContainer.innerHTML += `
+          <div style="
+            background:#fff;
+            margin-bottom:10px;
+            padding:12px;
+            border-radius:12px;
+          ">
+            <b>${p.user || "User"}</b>
+            <p style="margin:8px 0">${p.text || ""}</p>
+            ${
+              p.media
+              ? `<img src="${p.media}" style="width:100%;border-radius:10px">`
+              : ""
+            }
+          </div>
+        `;
+      });
+    });
+}
+
+loadPosts();
+</script>
+<script>
+function uploadAndPost(){
+  const text = document.getElementById("postContent").value;
+  if(text.trim()=="") return alert("စာရေးပါ");
+
+  db.collection("posts").add({
+    text: text,
+    user: localStorage.getItem("chat_user_name") || "Guest",
+    time: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  document.getElementById("postContent").value="";
+}
+</script>
+    <script src="script.js"></script>
+</body>
+</html>
