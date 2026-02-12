@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmotioN - Profile</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        :root { --purple: #800080; --bg: #f0f2f5; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pyidaungsu', sans-serif; }
+        body { background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 65px 15px 100px 15px; }
+
+        .global-header { position: fixed; top: 0; width: 100%; height: 55px; background-color: var(--purple); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .logo { display: flex; align-items: center; }
+        .e-box { width: 35px; height: 35px; position: relative; display: flex; justify-content: center; align-items: center; margin-right: 5px; }
+        .e-box::before { content: ""; position: absolute; inset: 0; border: 2px solid white; border-right: none; border-radius: 5px 10px 10px 5px; }
+        .e-letter { font-size: 22px; font-weight: 800; color: #f3b64d; }
+        .logo-text { font-size: 20px; font-weight: 700; color: white; }
+
+        .profile-card { background: white; width: 100%; max-width: 400px; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .cover-photo { width: 100%; height: 160px; background: #ddd; position: relative; }
+        .cover-photo img { width: 100%; height: 100%; object-fit: cover; }
+        .btn-cover { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; padding: 5px 12px; border-radius: 5px; font-size: 11px; cursor: pointer; }
+
+        .profile-info { display: flex; align-items: flex-end; padding: 0 15px 15px; margin-top: -50px; }
+        .avatar-box { position: relative; width: 100px; height: 100px; }
+        .avatar-box img { width: 100%; height: 100%; border-radius: 50%; border: 4px solid white; background: #eee; object-fit: cover; }
+        .btn-avatar { position: absolute; bottom: 0; right: 0; background: var(--purple); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid white; cursor: pointer; }
+
+        .card { background: white; padding: 15px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: 100%; max-width: 400px; margin-top: 10px; }
+        .grid-item { width: 100%; aspect-ratio: 1/1; background: #f0f0f0; overflow: hidden; border-radius: 4px; border: 1px solid #eee; }
+        .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; }
+
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 60px; background: white; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #eee; z-index: 2000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #666; font-size: 10px; }
+        .nav-item img { width: 22px; height: 22px; margin-bottom: 4px; }
+        .nav-item.active { color: var(--purple); font-weight: bold; }
+
+        .info-card { background: #fff; padding: 15px; border-radius: 12px; width: 100%; max-width: 400px; margin-bottom: 20px; font-size: 13px; }
+        #status { display: none; color: var(--purple); font-weight: bold; margin: 10px 0; text-align: center; }
+        
+        .apply-grid { display: flex; gap: 10px; width: 100%; max-width: 400px; margin-bottom: 20px; }
+        .apply-card { flex: 1; padding: 15px; border-radius: 12px; color: white; text-align: center; }
+        .gold-card { background: linear-gradient(45deg, #ffd700, #daa520); }
+        .crown-card { background: linear-gradient(45deg, #800080, #4b0082); }
+        .apply-card button { margin-top: 8px; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 10px; }
+    </style>
+</head>
+<body>
+
+    <header class="global-header">
+        <div class="logo">
+            <div class="e-box"><span class="e-letter">E</span></div>
+            <div class="logo-text">m</div>
+        </div>
+        <div class="header-tools" style="display: flex; align-items: center; gap: 15px;font-size: 22px;">
+            <a href="sug.html" style="text-decoration:none;">👥</a>
+            <a href="noti.html" style="text-decoration:none;">🔔</a>
+            <button id="langBtn" style="background: white; border: 1px solid white; border-radius: 4px; padding: 2px 8px; color: purple; font-weight: bold; cursor: pointer;font-size: 18px;" onclick="toggleLanguage()">e/မ</button>
+        </div>
+    </header>
+
+    <div class="profile-card">
+        <div class="cover-photo">
+            <img src="https://via.placeholder.com/800x300?text=No+Cover" id="userCover">
+            <label for="coverIn" class="btn-cover" data-lang="edit_cover">📷 Edit Cover</label>
+            <input type="file" id="coverIn" hidden onchange="doUpload(this, 'cover')">
+        </div>
+
+        <div class="profile-info">
+            <div class="avatar-box">
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" id="userAvatar">
+                <label for="avatarIn" class="btn-avatar">📷</label>
+                <input type="file" id="avatarIn" hidden onchange="doUpload(this, 'avatar')">
+            </div>
+            <div class="name-box" style="margin-left: 10px;">
+                <h3 id="pName">Loading...</h3>
+                <p style="font-size: 12px; color: gray;" data-lang="user_tier">Normal User</p>
+            </div>
+        </div>
+        <div id="status" data-lang="uploading">ပုံတင်နေပါသည်...</div>
+    </div>
+
+    <div class="card">
+        <textarea id="postContent" rows="3" data-lang-placeholder="post_placeholder" placeholder=" ဗဟုသုတများ မျှဝေပါ..." style="width:100%; border-radius:8px; padding:10px; border:1px solid #ddd;"></textarea>
+        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+            <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" onchange="previewMedia(this)">
+            <div style="background-color: #f33; width:100%; color: #fff; border-radius: 8px; text-align: center; padding: 5px; font-size: 12px;" data-lang="video_limit">
+                👋 ဗီဒီယို 20mb သာတင်လို့ရသည်🙏
+            </div>
+            <label for="mediaInput" class="upload-label" style="background:#eee; padding:10px; border-radius:5px; cursor:pointer; flex:1; text-align:center;" data-lang="select_media">📷 ပုံ/ဗီဒီယို ရွေးရန်</label>
+            <button id="btnPost" class="btn-post" style="flex:1; margin:0; background: var(--purple); color:white; border:none; border-radius:5px;" onclick="uploadAndPost()" data-lang="post_btn">တင်မည်</button>
+        </div>
+        <div id="newsFeed" class="grid-container"></div>
+    </div>
+
+    <div class="apply-grid">
+        <div class="apply-card gold-card">
+            <h5 data-lang="gold_title">ရွှေရောင် $ အကောင့်</h5>
+            <p style="font-size: 10px;" data-lang="gold_desc">Apply for Gold Tier</p>
+            <a href="gold.html"><button data-lang="apply_btn">လျှောက်ထားရန်</button></a>
+        </div>
+        <div class="apply-card crown-card">
+            <h5 data-lang="crown_title">ခရမ်းရောင် Crown</h5>
+            <p style="font-size: 10px;" data-lang="crown_desc">Lifetime Membership</p>
+            <a href="purple.html"><button data-lang="apply_btn">လျှောက်ထားရန်</button></a>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <h4 data-lang="policy_header">📢 App Policy & Guarantees</h4>
+        <div id="policyMyan" class="policy-text">
+                        (မြန်မာ) ဤ App သည် ဘက်လိုက်ခြင်းမရှိသော Social Media ဖြစ်ပါသည်။ နိုင်ငံအတွင်း သတင်းမှန်များရရှိရေး၊ ပညာရေး၊ ကျန်းမာရေး၊ စိုက်ပျိုးရေးနှင့် လူမှုရေးဗဟုသုတများ မျှဝေရန် ရည်ရွယ်ပါသည်။ အသုံးပြုသူတိုင်း၏ Data ကို ပေါက်ကြားမှုမရှိစေရန် အာမခံပါသည်။ 
+            <br>• <b>Normal:</b> 30MB Media, 3000+ Suggestions.
+            <br>• <b>Gold ($):</b> 100MB Media, 4000+ Suggestions, Livestream (No Replay), Business Posts.
+            <br>• <b>Crown (👑):</b> 100MB Media, 10000+ Suggestions, Livestream (No reply),Lifetime Access,No business.
+            <br>⚠️ လူမျိုးရေး၊ ဘာသာရေး အမုန်းစကားများ လုံးဝ(လုံးဝ) ခွင့်မပြုပါ။ Likes 1000 မပြည့်သော Video များကို ၁ နှစ်အကြာတွင် Auto ဖျက်သိမ်းပါမည်။
+
+        </div>
+        <div id="policyEng" class="policy-text" style="display:none;">
+            (English) EmotioN is a neutral social platform for sharing authentic news, education, health, and social knowledge. We guarantee user data privacy.
+                        <br>• <b>Normal:</b> 30MB Media, 3000+ Suggestions.
+            <br>• <b>Gold ($):</b> 100MB Media, 4000+ Suggestions, Livestream (No Replay), Business Posts.
+            <br>• <b>Crown (👑):</b> 100MB Media, 10000+ Suggestions, Livestream (No reply),Lifetime Access,No business.<br>
+            Hate speech regarding race or religion is strictly prohibited. Videos with less than 1000 likes will be auto-deleted after one year.
+
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 20px;">
+        <h4 style="text-align: center; margin-bottom: 12px;" data-lang="feedback_title">📝 App Feedback ပေးရန်</h4>
+        <textarea id="feedbackMsg" style="width:100%; border-radius:8px; padding:10px; border:1px solid #ddd;" data-lang-placeholder="feedback_placeholder" placeholder="App အသုံးပြုရတာ အဆင်ပြေရဲ့လား?"></textarea>
+        <button onclick="submitFeedback()" style="width:100%; margin-top:10px; padding:10px; background:var(--purple); color:white; border:none; border-radius:5px;" data-lang="send_btn">ပို့မည်</button>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="user.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/1946/1946488.png"><span data-lang="nav_user">User</span>
+        </a>
+        <a href="group.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/615/615075.png"><span data-lang="nav_group">Group</span>
+        </a>
+        <a href="chat.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/589/589708.png"><span data-lang="nav_chat">Chat</span>
+        </a>
+        <a href="live.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/4404/4404094.png"><span data-lang="nav_live">Live</span>
+        </a>
+        <a href="profile.html" class="nav-item active">
+            <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png"><span data-lang="nav_profile">Profile</span>
+        </a>
+    </nav>
+
+<script>
+    // --- FIREBASE CONFIG ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    const IMGBB_KEY = "C8d8d00185e973ebcafddd34f77a1176"; 
+    const BUNNY_KEY = "a038d7e1-bf94-448b-b863c156422e-7e4a-4299"; 
+    const BUNNY_STORAGE = "public-hospitals";
+
+    // --- LANGUAGE DICTIONARY ---
+    const translations = {
+        mm: {
+            edit_cover: "📷 Edit Cover",
+            user_tier: "Normal User",
+            uploading: "ပုံတင်နေပါသည်...",
+            post_placeholder: " ဗဟုသုတများ မျှဝေပါ...",
+            video_limit: "👋 ဗီဒီယို 20mb သာတင်လို့ရသည်🙏",
+            select_media: "📷 ပုံ/ဗီဒီယို ရွေးရန်",
+            post_btn: "တင်မည်",
+            gold_title: "ရွှေရောင် $ အကောင့်",
+            gold_desc: "Apply for Gold Tier",
+            crown_title: "ခရမ်းရောင် Crown",
+            crown_desc: "Lifetime Membership",
+            apply_btn: "လျှောက်ထားရန်",
+            policy_header: "📢 App Policy & Guarantees",
+            feedback_title: "📝 App Feedback ပေးရန်",
+            feedback_placeholder: "App အသုံးပြုရတာ အဆင်ပြေရဲ့လား?",
+            send_btn: "ပို့မည်",
+            nav_user: "User", nav_group: "Group", nav_chat: "Chat", nav_live: "Live", nav_profile: "Profile"
+        },
+        en: {
+            edit_cover: "📷 Edit Cover",
+            user_tier: "Normal User",
+            uploading: "Uploading...",
+            post_placeholder: " Share your knowledge...",
+            video_limit: "👋 Video limit is 20mb only🙏",
+            select_media: "📷 Select Media",
+            post_btn: "Post",
+            gold_title: "Gold $ Tier",
+            gold_desc: "Get Gold Badge",
+            crown_title: "Purple Crown",
+            crown_desc: "Lifetime Membership",
+            apply_btn: "Apply Now",
+            policy_header: "📢 App Policy & Guarantees",
+            feedback_title: "📝 Give App Feedback",
+            feedback_placeholder: "Is the app working well for you?",
+            send_btn: "Send",
+            nav_user: "User", nav_group: "Group", nav_chat: "Chat", nav_live: "Live", nav_profile: "Profile"
+        }
+    };
+
+    let currentLang = 'mm';
+
+    function toggleLanguage() {
+        currentLang = (currentLang === 'mm') ? 'en' : 'mm';
+        document.getElementById('langBtn').innerText = (currentLang === 'mm') ? "e/မ" : "MM/EN";
+
+        // စာသားများလဲလှယ်ခြင်း
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            el.innerText = translations[currentLang][key];
+        });
+
+        // Placeholder များလဲလှယ်ခြင်း
+        document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-lang-placeholder');
+            el.placeholder = translations[currentLang][key];
+        });
+
+        // Policy ပြောင်းလဲခြင်း
+        document.getElementById('policyMyan').style.display = (currentLang === 'mm') ? "block" : "none";
+        document.getElementById('policyEng').style.display = (currentLang === 'en') ? "block" : "none";
+    }
+
+    // --- FIREBASE LOGIC ---
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            db.collection("users").doc(user.uid).onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    document.getElementById('pName').innerText = data.name || user.displayName || "User";
+                    if (data.avatar) document.getElementById('userAvatar').src = data.avatar;
+                    if (data.cover) document.getElementById('userCover').src = data.cover;
+                }
+            });
+            loadMyPosts(user.uid);
+        } else { window.location.href = "login.html"; }
+    });
+
+    async function uploadAndPost() {
+        const text = document.getElementById('postContent').value.trim();
+        const file = document.getElementById('mediaInput').files[0];
+        const btn = document.getElementById('btnPost');
+        if (!text && !file) return alert("စာ သို့မဟုတ် ဖိုင်ထည့်ပါ");
+        
+        btn.disabled = true; btn.innerText = "...";
+
+        try {
+            let mediaUrl = "", mediaType = "";
+            if (file) {
+                const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+                if (file.type.startsWith('video/')) {
+                    mediaType = 'video';
+                    const res = await fetch(`https://sg.storage.bunnycdn.com/${BUNNY_STORAGE}/${fileName}`, {
+                        method: 'PUT', headers: { 'AccessKey': BUNNY_KEY }, body: file
+                    });
+                    if (res.ok) mediaUrl = `https://public-hospitals.b-cdn.net/${fileName}`;
+                } else {
+                    mediaType = 'image';
+                    const fd = new FormData(); fd.append('image', file);
+                    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd });
+                    const d = await res.json();
+                    if (d.success) mediaUrl = d.data.url;
+                }
+            }
+
+            await db.collection("health_posts").add({
+                uid: auth.currentUser.uid,
+                author: auth.currentUser.displayName || "User",
+                text: text,
+                mediaUrl: mediaUrl,
+                mediaType: mediaType,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            document.getElementById('postContent').value = "";
+            document.getElementById('mediaInput').value = "";
+            alert("Success!");
+        } catch (e) { alert(e.message); }
+        finally { btn.disabled = false; btn.innerText = translations[currentLang].post_btn; }
+    }
+
+    function loadMyPosts(uid) {
+        const feed = document.getElementById('newsFeed');
+        db.collection("health_posts").where("uid", "==", uid).onSnapshot(snap => {
+            feed.innerHTML = "";
+            if (snap.empty) { feed.innerHTML = "<p style='grid-column:span 3;text-align:center;'>No Post</p>"; return; }
+            
+            let posts = [];
+            snap.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+            posts.sort((a, b) => {
+                const aT = (a.createdAt && a.createdAt.toMillis) ? a.createdAt.toMillis() : Date.now();
+                const bT = (b.createdAt && b.createdAt.toMillis) ? b.createdAt.toMillis() : Date.now();
+                return bT - aT;
+            });
+
+            posts.forEach(d => {
+                const item = document.createElement('div');
+                item.className = "grid-item";
+                if (d.mediaUrl) {
+                    item.innerHTML = d.mediaType === 'video' ? `<video src="${d.mediaUrl}" controls></video>` : `<img src="${d.mediaUrl}">`;
+                } else {
+                    item.innerHTML = `<div style="padding:10px; font-size:11px; text-align:center;">${d.text}</div>`;
+                }
+                feed.appendChild(item);
+            });
+        });
+    }
+
+    async function doUpload(input, type) {
+        if (!input.files[0]) return;
+        const status = document.getElementById('status');
+        status.style.display = 'block';
+        const formData = new FormData();
+        formData.append('image', input.files[0]);
+        try {
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: formData });
+            const d = await res.json();
+            if (d.success) {
+                await db.collection("users").doc(auth.currentUser.uid).set({ [type]: d.data.url }, { merge: true });
+                alert("Success!");
+            }
+        } catch (e) { alert(e.message); }
+        finally { status.style.display = 'none'; input.value = ""; }
+    }
+</script>
+</body>
+</html>
