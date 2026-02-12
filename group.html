@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group - EmotioN</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <style>
+        :root { --purple: #800080; --bg: #f0f2f5; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background: var(--bg); padding-top: 60px; padding-bottom: 30px; display: flex; flex-direction: column; align-items: center; }
+        .group-header { position: fixed; top: 0; width: 100%; height: 55px; background: var(--purple); color: white; display: flex; align-items: center; padding: 0 15px; z-index: 1000; width:100%; }
+        .card { width: 95%; max-width: 500px; background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn { border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.3s; }
+        .btn-post { background: var(--purple); color: white; }
+        .btn-post:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-delete { background: #f44336; color: white; }
+        .btn-create { background: #4caf50; color: white; }
+        #groupFeed { width: 95%; max-width: 500px; }
+        .post-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; }
+        .post-media { width: 100%; border-radius: 8px; margin-top: 10px; max-height: 400px; object-fit: cover; background: #000; }
+        .del-icon { position: absolute; top: 10px; right: 10px; color: red; cursor: pointer; font-size: 18px; border: none; background: none; }
+        .interaction-bar span { font-size: 14px; color: #555; user-select: none; }
+    </style>
+</head>
+<body>
+
+    <header class="group-header">
+        <span onclick="history.back()" style="cursor:pointer; margin-right:15px;">←</span>
+        <div id="displayGroupName" style="font-weight:bold;">Community Group</div>
+    </header>
+
+    <div id="joinBox" class="card" style="display:none; border: 2px solid #4caf50;">
+        <h3 style="color:#4caf50; margin-bottom:10px;">Community ထဲဝင်ရန်</h3>
+        <p style="font-size:14px; color:#666; margin-bottom:10px;">Post တင်နိုင်ရန်အတွက် အဖွဲ့ဝင်အရင်ဝင်ပါ Senior။</p>
+        <button class="btn btn-create" onclick="joinGroup()">Join Community Group</button>
+    </div>
+
+    <div id="createBox" class="card" style="display:none;">
+        <h3 style="color:var(--purple); margin-bottom:10px;">Group အသစ်တည်ထောင်မည်</h3>
+        <input type="text" id="newGroupName" placeholder="Group အမည်..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">
+        <button class="btn btn-create" onclick="handleCreateGroup()">Create Group</button>
+    </div>
+
+    <div id="adminBox" class="card" style="display:none;">
+        <p style="font-size:14px; color:#d32f2f; font-weight:bold;">သင်သည် Group Admin ဖြစ်သည်။</p>
+        <button class="btn btn-delete" onclick="handleDeleteGroup()">Delete My Group</button>
+        <hr style="margin: 15px 0;">
+        <div id="memberListArea" style="max-height: 200px; overflow-y: auto;">
+            <h4 style="margin-bottom:10px;">👥 Members List</h4>
+            <div id="memberList"></div>
+        </div>
+    </div>
+
+    <div id="postBox" class="card" style="display:none; border-top: 4px solid var(--purple);">
+        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+            <div style="width: 40px; height: 40px; background: #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px;">👤</div>
+            <b id="userNameDisplay" style="color: #333;">User</b>
+        </div>
+        <textarea id="postText" rows="3" placeholder="ဘာတွေတွေးနေလဲ Senior..." style="width:100%; padding:12px; border:none; border-radius:8px; resize:none; font-size: 16px; outline: none; background: #f9f9f9;"></textarea>
+        
+        <div id="mediaPreviewContainer" style="display:none; margin-top: 10px; position: relative;">
+            <div id="previewContent"></div>
+            <button onclick="removeFile()" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; z-index: 10;">×</button>
+        </div>
+
+        <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+            <label for="mediaInput" style="display: flex; align-items: center; cursor: pointer; color: #555; font-size: 14px; width: fit-content;">
+                <span style="font-size: 20px; margin-right: 8px;">🖼️</span> Photo/Video တင်မည်
+            </label>
+            <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" onchange="previewMedia(this)">
+        </div>
+        <button id="submitBtn" class="btn btn-post" onclick="handlePost()" style="margin-top: 15px; border-radius: 25px;">Post တင်မည်</button>
+    </div>
+
+    <div id="commentModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:2000; justify-content:center; align-items:center; padding: 20px;">
+        <div class="card" style="width:100%; max-height:80%; overflow-y:auto; position:relative;">
+            <button onclick="closeComments()" style="position:absolute; top:10px; right:10px; border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+            <h3 style="color:var(--purple); margin-bottom:15px;">Comments</h3>
+            <div id="commentsList" style="margin-bottom:15px;"></div>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="commentInput" placeholder="Comment ရေးပါ..." style="flex:1; padding:10px; border-radius:8px; border:1px solid #ddd;">
+                <button class="btn-post" onclick="submitComment()" style="padding:10px 15px; border-radius:8px; border:none; cursor:pointer; background:var(--purple); color:white;">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="groupFeed"></div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    const IMGBB_KEY = "C8d8d00185e973ebcafddd34f77a1176"; 
+    const DEVELOPER_UID = "JmfslTvO9SYQfpGdaKxtwBkBxQh2"; 
+
+    let currentGroupAdmin = "";
+    let activePostId = "";
+
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            document.getElementById('userNameDisplay').innerText = user.displayName || "User";
+            checkUserStatus(user.uid);
+            loadPosts();
+        } else { window.location.href = "login.html"; }
+    });
+
+async function checkUserStatus(uid) {
+    try {
+        // --- ၁။ Group အမည်ကို Header မှာ ပြပေးရန် ပေါင်းထည့်ထားသောအပိုင်း ---
+        const groupSnap = await db.collection("groups").limit(1).get();
+        if (!groupSnap.empty) {
+            const groupData = groupSnap.docs[0].data();
+            const headerTitle = document.getElementById('displayGroupName');
+            if (headerTitle) {
+                headerTitle.innerText = groupData.groupName; // Admin ပေးထားတဲ့ နာမည်ကို ပြပါမယ်
+            }
+        }
+        // -----------------------------------------------------------
+
+        const adminSnap = await db.collection("groups").where("createdBy", "==", uid).limit(1).get();
+        const memberSnap = await db.collection("group_members").where("uid", "==", uid).limit(1).get();
+        
+        document.getElementById('createBox').style.display = "none";
+        document.getElementById('adminBox').style.display = "none";
+        document.getElementById('postBox').style.display = "none";
+        document.getElementById('joinBox').style.display = "none";
+
+        if (!adminSnap.empty) {
+            document.getElementById('adminBox').style.display = "block";
+            document.getElementById('postBox').style.display = "block";
+            currentGroupAdmin = uid;
+            loadMembers();
+        } else if (!memberSnap.empty) {
+            document.getElementById('postBox').style.display = "block";
+            // Member အတွက်လည်း Admin UID ကို သိထားဖို့ လိုအပ်လို့ ဆွဲယူခြင်း
+            if (!groupSnap.empty) currentGroupAdmin = groupSnap.docs[0].data().createdBy;
+        } else {
+            document.getElementById('joinBox').style.display = "block";
+            document.getElementById('createBox').style.display = "block";
+        }
+    } catch (e) { 
+        console.error("User Status Error: ", e); 
+    }
+}
+
+ function loadPosts() {
+        db.collection("group_posts").orderBy("createdAt", "desc").onSnapshot(snap => {
+            const feed = document.getElementById('groupFeed');
+            feed.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const card = document.createElement('div');
+                card.className = "post-card";
+                
+                let canDelete = (auth.currentUser.uid === DEVELOPER_UID || auth.currentUser.uid === d.uid || auth.currentUser.uid === d.groupAdminUid);
+                let delBtn = canDelete ? `<button class="del-icon" onclick="deletePost('${doc.id}')">🗑️</button>` : "";
+                
+                let mediaHTML = "";
+                if (d.mediaUrl) {
+                    if (d.mediaType === 'video') {
+                        mediaHTML = `<video src="${d.mediaUrl}" controls class="post-media"></video>`;
+                    } else {
+                        mediaHTML = `<img src="${d.mediaUrl}" class="post-media">`;
+                    }
+                }
+
+                card.innerHTML = `
+                    ${delBtn}<b>${d.author}</b><p style="margin-top:5px;">${d.text}</p>${mediaHTML}
+                    <div class="interaction-bar" style="display:flex; gap:15px; margin-top:10px; border-top:1px solid #eee; padding-top:8px;">
+                        <span onclick="react('${doc.id}', 'likes')" style="cursor:pointer;">👍 ${d.likes || 0}</span>
+                        <span onclick="react('${doc.id}', 'hahas')" style="cursor:pointer;">😆 ${d.hahas || 0}</span>
+                        <span onclick="showComments('${doc.id}')" style="cursor:pointer;">💬 ${d.comments || 0}</span>
+                        <span onclick="sharePost('${doc.id}')" style="cursor:pointer;">🚀 Share</span>
+                    </div>`;
+                feed.appendChild(card);
+            });
+        });
+    }
+
+    async function react(postId, type) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const postRef = db.collection("group_posts").doc(postId);
+    const reactionRef = postRef.collection("reactions").doc(user.uid);
+
+    await db.runTransaction(async (transaction) => {
+        const postDoc = await transaction.get(postRef);
+        const reactionDoc = await transaction.get(reactionRef);
+
+        let postData = postDoc.data() || {};
+        let likes = postData.likes || 0;
+        let hahas = postData.hahas || 0;
+
+        if (reactionDoc.exists) {
+            const oldType = reactionDoc.data().type;
+
+            if (oldType === type) {
+                if (type === "likes") likes--;
+                if (type === "hahas") hahas--;
+                transaction.delete(reactionRef);
+            } else {
+                if (oldType === "likes") likes--;
+                if (oldType === "hahas") hahas--;
+                if (type === "likes") likes++;
+                if (type === "hahas") hahas++;
+
+                transaction.update(reactionRef, { type });
+            }
+        } else {
+            if (type === "likes") likes++;
+            if (type === "hahas") hahas++;
+
+            transaction.set(reactionRef, { type, uid: user.uid });
+        }
+
+        transaction.update(postRef, {
+            likes: likes,
+            hahas: hahas
+        });
+    });
+}
+  async function showComments(postId) {
+        activePostId = postId;
+        document.getElementById('commentModal').style.display = "flex";
+        const list = document.getElementById('commentsList');
+        db.collection("group_posts").doc(postId).collection("comments").orderBy("createdAt", "asc").onSnapshot(snap => {
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const c = doc.data();
+                list.innerHTML += `<div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:8px;">
+                    <b>${c.author}</b><p>${c.text}</p>
+                    <div style="font-size:12px; margin-top:5px;">
+                        <span onclick="reactComment('${postId}', '${doc.id}', 'likes')" style="cursor:pointer; margin-right:10px;">👍 ${c.likes || 0}</span>
+                        <span onclick="reactComment('${postId}', '${doc.id}', 'hahas')" style="cursor:pointer;">😆 ${c.hahas || 0}</span>
+                    </div></div>`;
+            });
+        });
+    }
+
+    async function submitComment() {
+        const text = document.getElementById('commentInput').value.trim();
+        if (!text || !activePostId) return;
+        await db.collection("group_posts").doc(activePostId).collection("comments").add({
+            text: text, uid: auth.currentUser.uid, author: auth.currentUser.displayName || "User",
+            likes: 0, hahas: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await db.collection("group_posts").doc(activePostId).update({ comments: firebase.firestore.FieldValue.increment(1) });
+        document.getElementById('commentInput').value = "";
+    }
+async function reactComment(postId, commentId, type) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // လမ်းကြောင်းများကို တိကျစွာသတ်မှတ်ခြင်း
+    const commentRef = db.collection("group_posts").doc(postId).collection("comments").doc(commentId);
+    const reactionRef = commentRef.collection("reactions").doc(user.uid);
+
+    try {
+        await db.runTransaction(async (transaction) => {
+            const commentDoc = await transaction.get(commentRef);
+            const reactionDoc = await transaction.get(reactionRef);
+
+            if (!commentDoc.exists) return;
+
+            let commentData = commentDoc.data();
+            let likes = commentData.likes || 0;
+            let hahas = commentData.hahas || 0;
+
+            if (reactionDoc.exists) {
+                const oldType = reactionDoc.data().type;
+
+                if (oldType === type) {
+                    // အရင်ပေးထားတဲ့ reaction ကို ပြန်ဖြုတ်တာ (Unlike)
+                    if (type === "likes") likes = Math.max(0, likes - 1);
+                    if (type === "hahas") hahas = Math.max(0, hahas - 1);
+                    transaction.delete(reactionRef);
+                } else {
+                    // Reaction အမျိုးအစား ပြောင်းတာ (Like ကနေ Haha ပြောင်းတာမျိုး)
+                    if (oldType === "likes") likes = Math.max(0, likes - 1);
+                    if (oldType === "hahas") hahas = Math.max(0, hahas - 1);
+                    
+                    if (type === "likes") likes++;
+                    if (type === "hahas") hahas++;
+                    
+                    transaction.update(reactionRef, { type: type });
+                }
+            } else {
+                // Reaction အသစ်ပေးတာ
+                if (type === "likes") likes++;
+                if (type === "hahas") hahas++;
+                transaction.set(reactionRef, { type: type, uid: user.uid });
+            }
+
+            // နောက်ဆုံးရလဒ်ကို တစ်ခါတည်း Update လုပ်ခြင်း
+            transaction.update(commentRef, {
+                likes: likes,
+                hahas: hahas
+            });
+        });
+    } catch (e) {
+        console.error("Reaction Error: ", e);
+    }
+}
+
+async function handlePost() {
+    const text = document.getElementById('postText').value.trim();
+    const file = document.getElementById('mediaInput').files[0];
+    const btn = document.getElementById('submitBtn');
+    
+    // BunnyCDN Settings (Profile page ကအတိုင်း ပြန်သုံးပါမယ်)
+    const BUNNY_KEY = "a038d7e1-bf94-448b-b863c156422e-7e4a-4299"; 
+    const BUNNY_STORAGE = "public-hospitals";
+
+    if (!text && !file) return;
+
+    btn.disabled = true;
+    btn.innerHTML = "တင်နေသည်... ⏳";
+
+    try {
+        let mediaUrl = "", mediaType = "";
+        if (file) {
+            const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+            
+            if (file.type.startsWith('video/')) {
+                // --- Video တင်ခြင်း (BunnyCDN သို့) ---
+                mediaType = 'video';
+                const res = await fetch(`https://sg.storage.bunnycdn.com/${BUNNY_STORAGE}/${fileName}`, {
+                    method: 'PUT',
+                    headers: { 'AccessKey': BUNNY_KEY },
+                    body: file
+                });
+                if (res.ok) {
+                    mediaUrl = `https://public-hospitals.b-cdn.net/${fileName}`;
+                } else {
+                    throw new Error("Video တင်ရာတွင် အမှားရှိနေပါသည်");
+                }
+            } else {
+                // --- Image တင်ခြင်း (ImgBB သို့) ---
+                mediaType = 'image';
+                const fd = new FormData();
+                fd.append('image', file);
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { 
+                    method: 'POST', 
+                    body: fd 
+                });
+                const d = await res.json();
+                if (d.success) { 
+                    mediaUrl = d.data.url; 
+                } else {
+                    throw new Error("Image တင်ရာတွင် အမှားရှိနေပါသည်");
+                }
+            }
+        }
+
+        await db.collection("group_posts").add({
+            text: text, 
+            mediaUrl: mediaUrl, 
+            mediaType: mediaType, 
+            uid: auth.currentUser.uid, 
+            author: auth.currentUser.displayName || "User", 
+            groupAdminUid: currentGroupAdmin || DEVELOPER_UID,
+            likes: 0, 
+            hahas: 0, 
+            comments: 0, 
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        document.getElementById('postText').value = ""; 
+        removeFile();
+        alert("တင်ပြီးပါပြီ Senior!");
+    } catch (e) { 
+        alert("Error: " + e.message); 
+    }
+    
+    btn.disabled = false;
+    btn.innerHTML = "Post တင်မည်";
+}
+
+  function previewMedia(input) {
+        const file = input.files[0];
+        const preview = document.getElementById('previewContent');
+        const container = document.getElementById('mediaPreviewContainer');
+        preview.innerHTML = "";
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                if (file.type.startsWith('image/')) {
+                    preview.innerHTML = `<img src="${e.target.result}" style="width: 100%; border-radius: 8px; max-height: 300px; object-fit: cover;">`;
+                } else if (file.type.startsWith('video/')) {
+                    preview.innerHTML = `<video src="${e.target.result}" style="width: 100%; border-radius: 8px; max-height: 300px;" muted autoplay loop></video>`;
+                }
+                container.style.display = "block";
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function removeFile() { document.getElementById('mediaInput').value = ""; document.getElementById('mediaPreviewContainer').style.display = "none"; }
+
+    async function joinGroup() {
+        try {
+            await db.collection("group_members").doc(auth.currentUser.uid).set({
+                uid: auth.currentUser.uid, displayName: auth.currentUser.displayName || "User", joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            alert("Joined!"); location.reload();
+        } catch (e) { alert(e.message); }
+    }
+
+    async function loadMembers() {
+        const list = document.getElementById('memberList');
+        db.collection("group_members").onSnapshot(snap => {
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const m = doc.data();
+                const isMe = auth.currentUser.uid === m.uid;
+                list.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px 0;">
+                    <span>${m.displayName}</span>
+                    ${(!isMe && auth.currentUser.uid === currentGroupAdmin) ? `<button onclick="kickMember('${doc.id}')" style="color:red; border:none; background:none;">Kick</button>` : ""}
+                </div>`;
+            });
+        });
+    }
+
+    async function kickMember(id) { if (confirm("Kick?")) await db.collection("group_members").doc(id).delete(); }
+
+    async function sharePost(postId) {
+        const postSnap = await db.collection("group_posts").doc(postId).get();
+        const d = postSnap.data();
+        await db.collection("health_posts").add({
+            text: d.text, mediaUrl: d.mediaUrl, mediaType: d.mediaType, uid: auth.currentUser.uid,
+            author: auth.currentUser.displayName || "User", isShared: true, originalAuthor: d.author, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        alert("Shared to profile!");
+    }
+
+    async function deletePost(id) { if (confirm("ဖျက်မှာလား Senior?")) await db.collection("group_posts").doc(id).delete(); }
+
+    function closeComments() { document.getElementById('commentModal').style.display = "none"; }
+
+    async function handleCreateGroup() {
+        const name = document.getElementById('newGroupName').value.trim();
+        if(!name) return;
+        await db.collection("groups").add({ groupName: name, createdBy: auth.currentUser.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        location.reload();
+    }
+
+    async function handleDeleteGroup() {
+        if (!confirm("Delete Group?")) return;
+        const snap = await db.collection("groups").where("createdBy", "==", auth.currentUser.uid).get();
+        snap.forEach(async (doc) => { await db.collection("groups").doc(doc.id).delete(); });
+        location.reload();
+    }
+</script>
+</body>
+  
+</html>
