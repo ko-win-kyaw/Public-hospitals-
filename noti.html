@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmotioN Smart Notification</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+    <style>
+        :root { --purple: #800080; --bg: #f4f7f6; --glass: rgba(128, 0, 128, 0.08); }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; padding-bottom: 80px; }
+        
+        .header-card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center; margin-bottom: 20px; border-top: 4px solid var(--purple); }
+        h2 { color: var(--purple); margin: 10px 0; font-size: 22px; }
+        
+        .btn-test { background: var(--purple); color: white; border: none; padding: 10px; border-radius: 12px; cursor: pointer; font-size: 13px; width: auto; padding: 8px 20px; transition: 0.3s; opacity: 0.8; }
+        .btn-test:hover { opacity: 1; }
+
+        .notif-container { width: 100%; max-width: 400px; }
+        .notif-header { font-weight: bold; color: #555; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding: 0 5px; }
+        
+        .notif-item { 
+            background: white; border-radius: 15px; padding: 15px; margin-bottom: 10px;
+            display: flex; align-items: flex-start; gap: 15px; border: 1px solid #efefef; transition: 0.3s;
+            position: relative; cursor: pointer;
+        }
+        .notif-item:active { transform: scale(0.98); background: #f9f9f9; }
+        .notif-item.unread { background: var(--glass); border-left: 5px solid var(--purple); }
+        
+        .notif-icon { font-size: 24px; background: #eee; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
+        .notif-content { text-align: left; flex: 1; }
+        .notif-title { font-weight: bold; font-size: 15px; color: #222; }
+        .notif-body { font-size: 13px; color: #555; margin-top: 3px; line-height: 1.4; }
+        .notif-time { font-size: 11px; color: #999; margin-top: 6px; display: block; }
+        .unread-dot { width: 10px; height: 10px; background: #e74c3c; border-radius: 50%; position: absolute; right: 15px; top: 15px; }
+
+        /* Empty State */
+        .empty-state { text-align: center; padding: 40px 20px; color: #999; }
+    </style>
+</head>
+<body>
+
+    <div class="header-card">
+        <h2>Notifications</h2>
+        <p id="userName" style="font-size: 13px; color: #888;">Checking status...</p>
+        <button class="btn-test" onclick="testSelfNotification()">Test Notification</button>
+    </div>
+
+    <div class="notif-container">
+        <div class="notif-header">
+            <span>အကြောင်းကြားစာများ</span>
+            <span id="unreadCount" style="color: var(--purple); font-size: 13px;"></span>
+        </div>
+        <div id="notifList">
+            <p style="text-align: center; color: #999;">Loading...</p>
+        </div>
+    </div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            document.getElementById('userName').innerText = "Logged in as: " + (user.displayName || "User");
+            loadNotificationHistory(user.uid);
+        } else { window.location.href = "login.html"; }
+    });
+
+    function loadNotificationHistory(myUid) {
+        // createdAt အတွက် Index ဆောက်ထားရန် လိုအပ်ပါသည်
+        db.collection("notifications")
+          .where("receiverId", "==", myUid)
+          .orderBy("createdAt", "desc")
+          .limit(20)
+          .onSnapshot(snap => {
+              const listDiv = document.getElementById('notifList');
+              let unread = 0;
+              listDiv.innerHTML = "";
+
+              if (snap.empty) {
+                  listDiv.innerHTML = `<div class="empty-state">🔔<br>အကြောင်းကြားစာ မရှိသေးပါ</div>`;
+                  return;
+              }
+
+              snap.forEach(doc => {
+                  const d = doc.data();
+                  if (d.status === "unread") unread++;
+
+                  const item = document.createElement('div');
+                  item.className = `notif-item ${d.status === 'unread' ? 'unread' : ''}`;
+                  
+                  // Noti နှိပ်ရင် လုပ်ဆောင်မည့်အချက်များ
+                  item.onclick = () => handleNotifClick(doc.id, d.status, d.postId);
+                  
+                  item.innerHTML = `
+                      <div class="notif-icon">${getIcon(d.title)}</div>
+                      <div class="notif-content">
+                          <div class="notif-title">${d.title}</div>
+                          <div class="notif-body">${d.body}</div>
+                          <span class="notif-time">${formatTime(d.createdAt)}</span>
+                      </div>
+                      ${d.status === 'unread' ? '<div class="unread-dot"></div>' : ''}
+                  `;
+                  listDiv.appendChild(item);
+              });
+              document.getElementById('unreadCount').innerText = unread > 0 ? `${unread} စောင်မဖတ်ရသေး` : "အားလုံးဖတ်ပြီးပြီ";
+          }, err => {
+              if(err.message.includes("index")) {
+                  listDiv.innerHTML = `<p style="color:red; font-size:12px;">Error: Index ဆောက်ရန် လိုအပ်နေပါသည်။ Console Link ကို နှိပ်ပါ။</p>`;
+              }
+          });
+    }
+
+    async function handleNotifClick(id, status, postId) {
+        // ၁။ ဖတ်ပြီးကြောင်း မှတ်သားမည်
+        if (status === "unread") {
+            await db.collection("notifications").doc(id).update({ status: "read" });
+        }
+        
+        // ၂။ Post ID ပါရင် သက်ဆိုင်ရာ စာမျက်နှာသို့ သွားမည်
+        if (postId) {
+            window.location.href = `group.html?id=${postId}`;
+        } else {
+            console.log("No specific post link for this notification.");
+        }
+    }
+
+    function getIcon(title) {
+        if (title.includes("Like")) return "❤️";
+        if (title.includes("Reaction")) return "😆";
+        if (title.includes("Shared")) return "🔁";
+        if (title.includes("Message")) return "💬";
+        return "🔔";
+    }
+
+    function formatTime(timestamp) {
+        if (!timestamp) return "ခုနက";
+        const date = timestamp.toDate();
+        return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " | " + date.toLocaleDateString();
+    }
+
+    async function testSelfNotification() {
+        const myUid = auth.currentUser.uid;
+        try {
+            await db.collection("notifications").add({
+                receiverId: myUid,
+                senderId: "system",
+                title: "Test Success! ✅",
+                body: "Senior ရေ... ဒါက Post ID မပါတဲ့ Test Noti ပါ။",
+                postId: "", // Post ID မပါတဲ့ သာမန် Noti
+                status: "unread",
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (e) { alert("Error: " + e.message); }
+    }
+</script>
+</body>
+</html>
