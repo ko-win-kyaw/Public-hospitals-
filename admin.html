@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Control Panel</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        :root { --purple: #800080; --bg: #f4f7f6; --card: #ffffff; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .admin-container { max-width: 800px; margin: 0 auto; }
+        
+        /* Glassmorphism Header */
+        .header { 
+            background: var(--purple); color: white; padding: 20px; 
+            border-radius: 15px; margin-bottom: 25px; 
+            box-shadow: 0 4px 15px rgba(128, 0, 128, 0.2);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* VIP Manager Section */
+        .manager-card {
+            background: var(--card); padding: 20px; border-radius: 15px;
+            margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .input-group { display: flex; gap: 10px; margin-top: 15px; }
+        input { 
+            flex: 1; padding: 12px; border: 1px solid #ddd; 
+            border-radius: 8px; outline: none; font-size: 14px;
+        }
+        .btn-vip { 
+            background: #27ae60; color: white; border: none; 
+            padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;
+        }
+
+        /* Feedback Cards */
+        .feedback-card { 
+            background: var(--card); border-radius: 12px; padding: 20px; 
+            margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 6px solid var(--purple); transition: 0.3s;
+        }
+        .feedback-card:hover { transform: translateY(-3px); }
+        .user-meta { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .user-name { font-weight: bold; color: var(--purple); }
+        .time { font-size: 12px; color: #888; }
+        .msg-text { color: #444; line-height: 1.6; background: #f9f9f9; padding: 10px; border-radius: 8px; }
+        .device-info { font-size: 11px; color: #aaa; margin-top: 12px; display: flex; gap: 10px; }
+        
+        .tab-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; }
+        .active-tab { background: white; color: var(--purple); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="admin-container" id="adminContent" style="display: none;">
+    <div class="header">
+        <div>
+            <h2 style="margin:0;">Dev Panel ⚙️</h2>
+            <small>Welcome back, Senior Suresh</small>
+        </div>
+        <button class="tab-btn active-tab" onclick="location.reload()">Refresh Data</button>
+    </div>
+
+    <div class="manager-card">
+        <h4 style="margin:0; color: #333;">Friends Limit Manager 🚀</h4>
+        <p style="font-size: 12px; color: #666;">User ၏ UID ကိုထည့်ပြီး Limit ၁၀၀၀၀ သို့ မြှင့်ပေးပါ။</p>
+        <div class="input-group">
+            <input type="text" id="targetUid" placeholder="Enter User UID here...">
+            <button class="btn-vip" onclick="makeVIP()">Upgrade to 10k</button>
+        </div>
+    </div>
+<div class="manager-card" style="border-top: 5px solid #ff4757;">
+    <h4 style="margin:0; color: #ff4757;">Danger Zone: Ban System 🚫</h4>
+    <p style="font-size: 12px; color: #666;">ဆူပူအုံကြွအောင် လုပ်သူ၏ UID သို့မဟုတ် Device ID ကို ထည့်ပြီး အပြီးတိုင် Ban ပါ။</p>
+    <div class="input-group">
+        <input type="text" id="banTarget" placeholder="User UID သို့မဟုတ် Device ID ကိုထည့်ပါ">
+        <button class="btn-vip" style="background:#ff4757;" onclick="banUser()">Permanently Ban</button>
+    </div>
+</div>
+
+<script>
+    // --- Ban User Function ---
+    async function banUser() {
+        const target = document.getElementById('banTarget').value.trim();
+        if(!target) return alert("UID သို့မဟုတ် Device ID ထည့်ပါ Senior");
+
+        if(confirm("ဒီ User ကို အပြီးတိုင် Ban မှာ သေချာလား? သူ ဘယ်လိုမှ ပြန်သုံးလို့ ရမှာ မဟုတ်တော့ဘူးနော်!")) {
+            try {
+                // ၁။ Users collection ထဲမှာ Ban Status သွားထည့်မယ်
+                await db.collection("users").doc(target).update({
+                    isBanned: true,
+                    bannedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    reason: "Community Guidelines Violation"
+                }).catch(() => { console.log("User not found by UID, trying Device ID..."); });
+
+                // ၂။ Banned Devices ဆိုတဲ့ Collection ထဲကို Device ID (သို့မဟုတ် UID) သွားထည့်မယ်
+                await db.collection("banned_devices").doc(target).set({
+                    deviceId: target,
+                    bannedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert("Banned Successfully! အဆိုပါ Device/User ကို ပိတ်ပင်လိုက်ပါပြီ။");
+                document.getElementById('banTarget').value = "";
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
+        }
+    }
+</script>
+
+    <h3 style="color: #333; margin-bottom: 15px;">Recent Feedbacks 📝</h3>
+    <div id="feedbackList">
+        <div class="empty">Loading feedbacks...</div>
+    </div>
+</div>
+
+<div id="denied" style="display:none; text-align:center; margin-top:100px;">
+    <h1 style="color:red;">Access Denied! ❌</h1>
+    <p>Developer သာ ဝင်ခွင့်ရှိသည်။</p>
+</div>
+
+<script>
+    // Firebase Config (Senior ရဲ့ မူရင်း config ထည့်ပါ)
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // UID အစား Developer Gmail ကို ဒီမှာ ပြောင်းထည့်လိုက်ပါပြီ
+    const seniorEmail = "uwinkyawdevelopbusinessco@gmail.com";
+
+    // ၁။ Security Check (Gmail နဲ့ စစ်ဆေးခြင်း)
+    auth.onAuthStateChanged(user => {
+        // user.uid အစား user.email နဲ့ တိုက်စစ်ပါမယ်
+        if (user && user.email === seniorEmail) {
+            document.getElementById('adminContent').style.display = 'block';
+            document.getElementById('denied').style.display = 'none'; // Denied စာသားကို ဖျောက်ဖို့ ထည့်ပေးထားပါတယ်
+            loadFeedbacks();
+        } else {
+            document.getElementById('adminContent').style.display = 'none';
+            document.getElementById('denied').style.display = 'block';
+        }
+    });
+
+    // ၂။ VIP Limit မြှင့်ပေးခြင်း
+    async function makeVIP() {
+        const uid = document.getElementById('targetUid').value.trim();
+        if(!uid) return alert("UID ထည့်ပေးပါ Senior");
+
+        try {
+            await db.collection("users").doc(uid).update({
+                friendLimit: 10000,
+                isVIP: true
+            });
+            alert("အောင်မြင်ပါသည်! ဤ User အတွက် Limit 10,000 ဖြစ်သွားပါပြီ။");
+            document.getElementById('targetUid').value = "";
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
+    }
+
+    // ၃။ Feedback များ ဆွဲယူခြင်း
+    function loadFeedbacks() {
+        db.collection("feedbacks").orderBy("createdAt", "desc").onSnapshot(snap => {
+            const listDiv = document.getElementById('feedbackList');
+            if (snap.empty) {
+                listDiv.innerHTML = "<p style='text-align:center; color:#999;'>Feedback မရှိသေးပါ</p>";
+                return;
+            }
+
+            listDiv.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const time = d.createdAt ? new Date(d.createdAt.seconds * 1000).toLocaleString() : "Just now";
+                
+                const card = document.createElement('div');
+                card.className = "feedback-card";
+                card.innerHTML = `
+                    <div class="user-meta">
+                        <span class="user-name">👤 ${d.userName || 'Anonymous'}</span>
+                        <span class="time">📅 ${time}</span>
+                    </div>
+                    <div class="msg-text">${d.feedbackMsg || d.text || 'No message'}</div>
+                    <div class="device-info">
+                        <span>📱 ${d.device || 'Unknown Device'}</span>
+                        <span>📦 v${d.version || '1.0.0'}</span>
+                        <span>🆔 ${d.uid ? d.uid.substring(0,8)+'...' : 'N/A'}</span>
+                    </div>
+                `;
+                listDiv.appendChild(card);
+            });
+        });
+    }
+</script>
+</body>
+</html>
