@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Page - Senior Final Fix</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <style>
+        :root { --p: #800080; --bg: #f0f2f5; }
+        body { background: var(--bg); margin: 0; font-family: sans-serif; padding-bottom: 70px; }
+        .header-box { background: white; border-radius: 0 0 20px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding-bottom: 12px; }
+        .cover-area { width: 100%; height: 180px; background: #ddd; position: relative; overflow: hidden; }
+        .cover-img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-area { padding: 15px; margin-top: -50px; display: flex; align-items: flex-end; gap: 12px; }
+        .p-img { width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; object-fit: cover; background: #eee; }
+        .card { background: white; margin: 12px; padding: 15px; border-radius: 12px; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .post-media { width: 100%; border-radius: 8px; margin-top: 10px; background: #000; max-height: 400px; }
+        .admin-only { display: none; }
+        .interaction { display: flex; justify-content: space-around; border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; font-size: 12px; font-weight: bold; }
+        .btn-main { background: var(--p); color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 13px; }
+        .comment-box { margin-top: 10px; border-top: 1px solid #eee; display: none; }
+        .c-item { background: #f0f2f5; padding: 10px; border-radius: 12px; margin-top: 8px; font-size: 13px; }
+        .c-reacts { font-size: 11px; margin-top: 5px; display: flex; gap: 12px; color: #555; }
+                        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 60px; background: white; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #eee; z-index: 2000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #666; font-size: 10px; }
+        .nav-item img { width: 22px; height: 22px; margin-bottom: 4px; }
+        .nav-item.active { color: var(--purple); font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header-box">
+        <div class="cover-area">
+            <img id="coverDisplay" class="cover-img" src="">
+        </div>
+        <div class="profile-area">
+            <img id="profileDisplay" class="p-img" src="">
+            <div style="flex:1;">
+                <h2 id="pageNameHeader" style="font-size: 17px; margin:0;">Emotion Community</h2>
+                <p id="memberCount" style="font-size: 11px; color: gray;">0 Members</p>
+            </div>
+            <div id="statusArea" style="display:flex; gap:5px;"></div>
+        </div>
+    <div class="card" style="margin-top: -20px; position: relative; z-index: 10;">
+    <div style="display:flex; gap:10px;">
+        <input type="text" id="pageSearchInput" placeholder="Page အမည်ဖြင့် ရှာဖွေပါ..." 
+               style="flex:1; border:1px solid #ddd; border-radius:20px; padding:10px 15px; outline:none;">
+        <button class="btn-main" onclick="searchPage()">ရှာပါ</button>
+    </div>
+    <div id="searchResults" style="margin-top:10px; display:none;"></div>
+</div>
+
+
+    <div id="postBox" class="card admin-only">
+        <textarea id="postText" rows="3" placeholder="ဘာတွေဝေမျှချင်လဲ Senior..." style="width:100%; border:none; outline:none; font-size:15px; resize:none;"></textarea>
+        <div id="mediaPreview" style="margin-top:10px; display:none;"></div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px; align-items:center;">
+            <label style="cursor:pointer; color:var(--p); font-size:13px; font-weight:bold;">🖼️ Media <input type="file" id="mediaInput" accept="image/*,video/*" hidden onchange="previewMedia(this)"></label>
+            <button class="btn-main" id="btnPost" onclick="handlePost()">Post</button>
+        </div>
+    </div>
+
+    <div id="feed"></div>
+        <div id="newsFeed"></div>
+            <nav class="bottom-nav">
+
+        <a href="group.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/615/615075.png"><span data-lang="nav_group">Group</span>
+        </a>
+        <a href="chat.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/589/589708.png"><span data-lang="nav_chat">Chat</span>
+        </a>
+        <a href="live.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/4404/4404094.png"><span data-lang="nav_live">Live</span>
+        </a>
+        <a href="profile.html" class="nav-item active">
+            <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png"><span data-lang="nav_profile">Profile</span>
+        </a>
+    </nav>
+    </div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    const IMGBB_KEY = "C8d8d00185e973ebcafddd34f77a1176";
+    
+    const BUNNY_KEY = "a038d7e1-bf94-448b-b863c156422e-7e4a-4299";
+    const BUNNY_STORAGE = "public-hospitals";
+    const ADMIN_EMAIL = "uwinkyawdevelopbusinessco@gmail.com";
+let isPremiumUser = false; // Global variable အဖြစ်ထားပါ
+const ADMIN_EMAIL = "uwinkyawdevelopbusinessco@gmail.com";
+let isPremiumUser = false;
+
+// URL ကနေ Page ID ကို ယူမယ် (မပါရင် 'main' လို့ သတ်မှတ်မယ်)
+const urlParams = new URLSearchParams(window.location.search);
+const currentPageId = urlParams.get('pageId') || "main"; 
+
+auth.onAuthStateChanged(async user => {
+    if (user) {
+        // ၁။ Branding နဲ့ Data တွေ အရင်တင်မယ်
+        loadBranding(); loadPosts(); loadMembers(); listenNoti();
+
+        // ၂။ Database ကနေ ဒီ User က Premium/Admin ဟုတ်မဟုတ် စစ်မယ်
+        const userDoc = await db.collection("users").doc(user.uid).get();
+        if (userDoc.exists && userDoc.data().isPremium === true) {
+            isPremiumUser = true;
+        }
+
+        // ၃။ Senior သို့မဟုတ် Page ပိုင်ရှင်ဆိုရင် Post Box ပြမယ်
+        if (user.email === ADMIN_EMAIL || isPremiumUser) { 
+            showAdmin(); 
+        } else { 
+            checkStatus(user.uid); 
+        }
+    } else { 
+        window.location.href = "user.html"; 
+    }
+});
+
+  function showAdmin() { document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block'); }
+    function formatTime(t) { return new Date(t).toLocaleString(); }
+function loadBranding() {
+    // doc("main") အစား doc(currentPageId) ကို သုံးပါ
+    db.collection("page_info").doc(currentPageId).onSnapshot(d => {
+        if (d.exists) {
+            const data = d.data();
+            document.getElementById('coverDisplay').src = data.cover || '';
+            document.getElementById('profileDisplay').src = data.profile || '';
+            document.getElementById('pageNameHeader').innerText = data.pageTitle || 'Emotion Community';
+        }
+    });
+}
+function loadPosts() {
+    // ၁။ လက်ရှိရောက်နေတဲ့ Page ID ရဲ့ Post တွေကိုပဲ ဆွဲထုတ်မယ်
+    db.collection("page_posts")
+      .where("pageId", "==", currentPageId) 
+      .orderBy("isPinned", "desc")
+      .orderBy("createdAt", "desc")
+      .onSnapshot(snap => {
+        const feed = document.getElementById('feed');
+        feed.innerHTML = ""; // အဟောင်းတွေကို အရင်ရှင်းထုတ်ပါ
+
+        snap.forEach(doc => {
+            const d = doc.data(); 
+            const id = doc.id; // ID ကို သေချာစွာရယူခြင်း
+
+            // ၂။ View တိုးသည့်စနစ် (၂ စက္ကန့်ကြာလျှင် ၁ ကြိမ်တိုးမည်)
+            setTimeout(() => { 
+                db.collection("page_posts").doc(id).update({ 
+                    views: firebase.firestore.FieldValue.increment(1) 
+                }); 
+            }, 2000);
+
+            // ၃။ UI Render Logic (Admin Buttons များအပါအဝင်)
+            const div = document.createElement('div'); 
+            div.className = "card"; 
+            div.id = `post-${id}`;
+            div.innerHTML = `
+                ${d.isPinned ? '<small style="color:purple; font-weight:bold;">📌 Pinned Post</small>' : ''}
+                <div style="font-size:12px; color:gray; margin-bottom:8px;">
+                    <b>${d.author}</b> • <span id="v-${id}">${d.views || 0}</span> views <br>
+                    <span class="time-label">${formatTime(d.createdAt)}</span>
+                    
+                    ${(auth.currentUser.email === ADMIN_EMAIL || isPremiumUser) ? `
+                        <div style="float:right; display:flex; gap:10px;">
+                            <span onclick="togglePin('${id}', ${d.isPinned})" style="cursor:pointer;">📌</span>
+                            <span onclick="deletePost('${id}')" style="cursor:pointer; color:red;">🗑️</span>
+                        </div>
+                    ` : ''}
+                </div>
+                <p style="white-space:pre-wrap;">${d.text}</p>
+                ${d.mediaUrl ? (d.mediaType==='video' ? `<video src="${d.mediaUrl}" controls class="post-media"></video>` : `<img src="${d.mediaUrl}" class="post-media">`) : ''}
+                
+                <div class="interaction">
+                    <span onclick="handleReact('${id}','likes')" style="cursor:pointer;">👍 <span id="l-${id}">${d.likes || 0}</span></span>
+                    <span onclick="handleReact('${id}','hahas')" style="cursor:pointer;">😆 <span id="h-${id}">${d.hahas || 0}</span></span>
+                    <span onclick="toggleC('${id}')" style="cursor:pointer;">💬 <span id="cc-${id}">${d.commentsCount || 0}</span></span>
+                    <span onclick="sharePost('${id}', '${encodeURIComponent(d.text)}')" style="cursor:pointer;">🚀 Share</span>
+                </div>
+                
+                <div class="comment-box" id="cb-${id}">
+                    <div id="cl-${id}"></div>
+                    <div style="display:flex; margin-top:10px; gap:5px;">
+                        <input type="text" id="cInput-${id}" placeholder="Write a comment..." style="flex:1; border-radius:15px; border:1px solid #ddd; padding:5px 10px; outline:none;">
+                        <button onclick="addComment('${id}')" style="border:none; background:purple; color:white; border-radius:15px; padding:5px 12px;">Send</button>
+                    </div>
+                </div>`;
+
+            feed.appendChild(div);
+            loadComments(id);
+        });
+    });
+}
+
+  function previewMedia(input) {
+        const file = input.files[0];
+        const preview = document.getElementById('mediaPreview');
+        preview.style.display = "block";
+        const url = URL.createObjectURL(file);
+        preview.innerHTML = file.type.startsWith('video') ? `<video src="${url}" controls style="width:100%; border-radius:8px;"></video>` : `<img src="${url}" style="width:100%; border-radius:8px;">`;
+    }
+
+    async function handlePost() {
+        const text = document.getElementById('postText').value;
+        const file = document.getElementById('mediaInput').files[0];
+        const btn = document.getElementById('btnPost');
+        btn.disabled = true; btn.innerText = "Uploading...";
+        
+        let mediaUrl = "", mediaType = "";
+        if (file) {
+            if(file.type.startsWith('video')) {
+                mediaUrl = await uploadToBunny(file); mediaType = 'video';
+            } else {
+                const fd = new FormData(); fd.append('image', file);
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd });
+                const d = await res.json(); if(d.success) { mediaUrl = d.data.url; mediaType = 'image'; }
+            }
+        }
+        await db.collection("page_posts").add({ 
+        text, mediaUrl, mediaType, 
+        createdAt: Date.now(), 
+        likes:0, hahas:0, views:0, commentsCount:0, isPinned:false, 
+        author: "Admin",
+        authorUid: auth.currentUser.uid,
+        pageId: currentPageId // လက်ရှိရောက်နေတဲ့ Page ID ထဲမှာပဲ Post တင်မယ်
+    });
+    location.reload();
+}
+
+   function loadPosts() {
+    db.collection("page_posts").orderBy("isPinned", "desc").orderBy("createdAt", "desc").onSnapshot(snap => {
+        const feed = document.getElementById('feed');
+        snap.docChanges().forEach(change => {
+            const d = change.doc.data(); const id = change.doc.id;
+            if (change.type === "added") {
+                // View တိုးမည့်စနစ် (Loop ထဲသို့ ပြောင်းရွှေ့သည်)
+                setTimeout(() => { db.collection("page_posts").doc(id).update({ views: firebase.firestore.FieldValue.increment(1) }); }, 2000);
+
+                const div = document.createElement('div'); div.className = "card"; div.id = `post-${id}`;
+                div.innerHTML = `
+                    ${d.isPinned ? '<small style="color:purple; font-weight:bold;">📌 Pinned Post</small>' : ''}
+                    <div style="font-size:12px; color:gray; margin-bottom:8px;">
+                        <b>${d.author}</b> • <span id="v-${id}">${d.views || 0}</span> views <br>
+                        <span class="time-label">${formatTime(d.createdAt)}</span>
+                        ${(auth.currentUser.email === ADMIN_EMAIL || isPremiumUser) ? `
+                            <div style="float:right; display:flex; gap:10px;">
+                                <span onclick="togglePin('${id}', ${d.isPinned})" style="cursor:pointer;">📌</span>
+                                <span onclick="deletePost('${id}')" style="cursor:pointer; color:red;">🗑️</span>
+                            </div>` : ''}
+                    </div>
+                    <p style="white-space:pre-wrap;">${d.text}</p>
+                    ${d.mediaUrl ? (d.mediaType==='video' ? `<video src="${d.mediaUrl}" controls class="post-media"></video>` : `<img src="${d.mediaUrl}" class="post-media">`) : ''}
+                    <div class="interaction">
+                        <span onclick="handleReact('${id}','likes')" style="cursor:pointer;">👍 <span id="l-${id}">${d.likes}</span></span>
+                        <span onclick="handleReact('${id}','hahas')" style="cursor:pointer;">😆 <span id="h-${id}">${d.hahas}</span></span>
+                        <span onclick="toggleC('${id}')" style="cursor:pointer;">💬 <span id="cc-${id}">${d.commentsCount || 0}</span></span>
+                        <span onclick="sharePost('${id}', '${encodeURIComponent(d.text)}')" style="cursor:pointer;">🚀 Share</span>
+                    </div>
+                    <div class="comment-box" id="cb-${id}"><div id="cl-${id}"></div>...</div>`;
+                feed.appendChild(div);
+                loadComments(id);
+            }
+        });
+    });
+}
+
+  // --- Admin Action Functions ---
+    async function deletePost(id) { 
+        if(confirm("ဒီ Post ကို ဖျက်မှာ သေချာလား Senior?")) {
+            await db.collection("page_posts").doc(id).delete(); 
+        }
+    }
+
+    async function togglePin(id, curStatus) { 
+        await db.collection("page_posts").doc(id).update({ isPinned: !curStatus });
+        alert(curStatus ? "Unpinned!" : "Pinned to top!");
+        location.reload(); // Pin list ပြန်စီရန်
+    }
+
+    async function deleteComment(pid, cid) { 
+        if(confirm("ဒီ Comment ကို ဖျက်မှာ သေချာလား Senior?")) {
+            await db.collection("page_posts").doc(pid).collection("comments").doc(cid).delete();
+            await db.collection("page_posts").doc(pid).update({ commentsCount: firebase.firestore.FieldValue.increment(-1) });
+        }
+    }
+
+    async function blockUser(uid, name) { 
+        if(!uid) return alert("User ID မရှိလို့ Block လို့မရပါ Senior!");
+        if(confirm(`${name} ကို Block မှာ သေချာလား? သူ ဒီ Page ကို ထပ်ဝင်လို့ ရတော့မှာ မဟုတ်ပါဘူး။`)) {
+            await db.collection("blocked_users").doc(uid).set({ 
+                blockedAt: Date.now(),
+                userName: name 
+            });
+            alert("Blocked successfully!");
+        }
+    }
+
+async function handleReact(id, type) {
+    const uid = auth.currentUser.uid;
+    const postRef = db.collection("page_posts").doc(id);
+    const doc = await postRef.get();
+    const data = doc.data();
+
+    // အရင်က Reaction ပေးထားသလား စစ်မယ်
+    const reactList = data[type + 'List'] || [];
+    
+    if (reactList.includes(uid)) {
+        // ပေးပြီးသားဆိုရင် ပြန်ဖြုတ်မယ် (Unlike)
+        await postRef.update({
+            [type]: firebase.firestore.FieldValue.increment(-1),
+            [type + 'List']: firebase.firestore.FieldValue.arrayRemove(uid)
+        });
+    } else {
+        // မပေးရသေးရင် ပေးမယ် (Like)
+        await postRef.update({
+            [type]: firebase.firestore.FieldValue.increment(1),
+            [type + 'List']: firebase.firestore.FieldValue.arrayUnion(uid)
+        });
+    }
+}
+
+    async function addComment(pid) {
+        const val = document.getElementById(`cInput-${pid}`).value;
+        if(!val) return;
+        await db.collection("page_posts").doc(pid).collection("comments").add({ author: auth.currentUser.email.split('@')[0], text: val, createdAt: Date.now(), likes: 0, hahas: 0 });
+        await db.collection("page_posts").doc(pid).update({ commentsCount: firebase.firestore.FieldValue.increment(1) });
+        sendNoti("New comment on your post");
+        document.getElementById(`cInput-${pid}`).value = "";
+    }
+    function loadComments(pid) {
+    db.collection("page_posts").doc(pid).collection("comments").orderBy("createdAt", "asc").onSnapshot(snap => {
+        const list = document.getElementById(`cl-${pid}`); 
+        if (!list) return;
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            const c = doc.data(); const cid = doc.id;
+            list.innerHTML += `
+                <div class="c-item">
+                    <b>${c.author}</b>: ${c.text}
+                    <div class="c-reacts">
+                        <span onclick="reactComment('${pid}','${cid}','likes')" style="cursor:pointer;">👍 <span id="clike-${cid}">${c.likes||0}</span></span>
+                        <span onclick="reactComment('${pid}','${cid}','hahas')" style="cursor:pointer;">😆 <span id="chaha-${cid}">${c.hahas||0}</span></span>
+                        
+                        ${(auth.currentUser.email === ADMIN_EMAIL || isPremiumUser) ? `
+                            <span onclick="deleteComment('${pid}','${cid}')" style="color:red; cursor:pointer; margin-left:10px;">🗑️ Delete</span>
+                            <span onclick="blockUser('${c.uid}', '${c.author}')" style="color:black; cursor:pointer; margin-left:10px;">🚫 Block User</span>
+                        ` : ''}
+                    </div>
+                </div>`;
+        });
+    });
+}
+async function reactComment(pid, cid, type) {
+    const uid = auth.currentUser.uid;
+    const commentRef = db.collection("page_posts").doc(pid).collection("comments").doc(cid);
+    const doc = await commentRef.get();
+    const data = doc.data();
+
+    const reactList = data[type + 'List'] || [];
+
+    if (reactList.includes(uid)) {
+        await commentRef.update({
+            [type]: firebase.firestore.FieldValue.increment(-1),
+            [type + 'List']: firebase.firestore.FieldValue.arrayRemove(uid)
+        });
+    } else {
+        await commentRef.update({
+            [type]: firebase.firestore.FieldValue.increment(1),
+            [type + 'List']: firebase.firestore.FieldValue.arrayUnion(uid)
+        });
+    }
+}
+  async function sendNoti(msg) {
+        const sender = auth.currentUser ? (auth.currentUser.displayName || auth.currentUser.email.split('@')[0]) : "User";
+        await db.collection("notifications").add({ receiverId: ADMIN_EMAIL, message: msg, sender: sender, createdAt: Date.now(), status: "unread" });
+    }
+
+    function listenNoti() {
+        if(auth.currentUser.email !== ADMIN_EMAIL) return;
+        db.collection("notifications").where("receiverId","==",ADMIN_EMAIL).where("status","==","unread").onSnapshot(snap => {
+            snap.docChanges().forEach(change => {
+                if(change.type === "added") {
+                    const n = change.doc.data();
+                    if(n.message) { alert(`🔔 ${n.sender}: ${n.message}`); db.collection("notifications").doc(change.doc.id).update({status: "read"}); }
+                }
+            });
+        });
+    }
+
+    async function checkStatus(uid) {
+        const isJoined = (await db.collection("page_members").doc(uid).get()).exists;
+        const area = document.getElementById('statusArea');
+        if (!isJoined) {
+            area.innerHTML = `<button class="btn-main" onclick="joinPage()">Join</button> 
+                             <button class="btn-main" style="background:#444;" onclick="startPageCreation()">Create</button>`;
+        }
+    }
+
+    async function startPageCreation() {
+        const name = prompt("Page Name:");
+        if(name) {
+            await db.collection("admin_requests").add({ uid: auth.currentUser.uid, email: auth.currentUser.email, requestedPageName: name, status: "pending", time: Date.now() });
+            alert("Request sent to Developer!");
+        }
+    }
+
+    async function joinPage() { await db.collection("page_members").doc(auth.currentUser.uid).set({ joinedAt: Date.now() }); location.reload(); }
+    function toggleC(id) { const b = document.getElementById(`cb-${id}`); b.style.display = b.style.display==='block'?'none':'block'; }
+    function loadBranding() { db.collection("page_info").doc("main").onSnapshot(d => { if(d.exists){ document.getElementById('coverDisplay').src = d.data().cover; document.getElementById('profileDisplay').src = d.data().profile; document.getElementById('pageNameHeader').innerText = d.data().pageTitle; }}); }
+    function loadMembers() { db.collection("page_members").onSnapshot(s => document.getElementById('memberCount').innerText = `${s.size} Members`); }
+    async function sharePost(id, text) {
+    const shareData = {
+        title: 'Emotion Community',
+        text: decodeURIComponent(text),
+        url: window.location.href // Post တစ်ခုချင်းစီအတွက် ID နဲ့ Link ပေးချင်ရင် ?id=${id} ထည့်လို့ရပါတယ်
+    };
+
+    try {
+        if (navigator.share) {
+            await navigator.share(shareData);
+        } else {
+            // Web Share API မရတဲ့ Browser တွေအတွက် Link ကို Copy ကူးပေးမယ်
+            navigator.clipboard.writeText(window.location.href);
+            alert("Post link copied to clipboard!");
+        }
+    } catch (err) { console.log("Error sharing:", err); }
+}
+// ၁။ Profile Page သို့ သွားရန်
+function goToProfile() {
+    // လက်ရှိ User ရဲ့ UID နဲ့ Profile Page ဆီ သွားမယ်
+    window.location.href = `profile.html?uid=${auth.currentUser.uid}`;
+}
+
+// ၂။ Branding ကို Database ကနေ ဆွဲတင်ရန် (Error ကင်းအောင် Fix ထားသည်)
+function loadBranding() {
+    db.collection("page_info").doc("main").onSnapshot(d => {
+        if (d.exists) {
+            const data = d.data();
+            document.getElementById('coverDisplay').src = data.cover || 'default-cover.jpg';
+            document.getElementById('profileDisplay').src = data.profile || 'default-profile.jpg';
+            document.getElementById('pageNameHeader').innerText = data.pageTitle || 'Emotion Community';
+        } else {
+            console.log("Database ထဲမှာ page_info/main ဆောက်ပေးဖို့ လိုပါတယ် Senior!");
+        }
+    });
+}
+async function searchPage() {
+    const query = document.getElementById('pageSearchInput').value.trim();
+    const resultsDiv = document.getElementById('searchResults');
+    if(!query) return;
+
+    resultsDiv.innerHTML = "Searching...";
+    resultsDiv.style.display = "block";
+
+    // page_info ထဲမှာ Page နာမည်နဲ့ ရှာမယ်
+    const snap = await db.collection("page_info")
+                         .where("pageTitle", "==", query)
+                         .get();
+
+    if(snap.empty) {
+        resultsDiv.innerHTML = "<small style='color:red;'>Page ရှာမတွေ့ပါ!</small>";
+    } else {
+        resultsDiv.innerHTML = "";
+        snap.forEach(doc => {
+            const data = doc.data();
+            const id = doc.id;
+            resultsDiv.innerHTML += `
+                <div onclick="switchToPage('${id}')" style="display:flex; align-items:center; gap:10px; padding:10px; background:#f9f9f9; border-radius:10px; cursor:pointer; margin-bottom:5px;">
+                    <img src="${data.profile}" style="width:40px; height:40px; border-radius:50%;">
+                    <div>
+                        <div style="font-weight:bold; font-size:14px;">${data.pageTitle}</div>
+                        <div style="font-size:11px; color:gray;">Admin: ${data.author || 'Admin'}</div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+}
+function switchToPage(pageId) {
+    // URL မှာ page parameter ထည့်ပြီး reload လုပ်မယ် (Multi-page စနစ်အတွက်)
+    window.location.href = `index.html?pageId=${pageId}`;
+}
+
+// loadBranding ထဲမှာ pageId ကို parameter အနေနဲ့ ပြန်ဖတ်ဖို့ ဒါလေးပြင်ပါ
+function loadBranding() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentPageId = urlParams.get('pageId') || "main"; // default က main
+
+    db.collection("page_info").doc(currentPageId).onSnapshot(d => {
+        if(d.exists){
+            const data = d.data();
+            document.getElementById('coverDisplay').src = data.cover;
+            document.getElementById('profileDisplay').src = data.profile;
+            document.getElementById('pageNameHeader').innerText = data.pageTitle;
+            // Post တွေပါ အဲ့ဒီ Page နဲ့ဆိုင်တာပဲ ပြဖို့ loadPosts(currentPageId) ဆိုပြီး ခေါ်ရပါမယ်
+        }
+    });
+}
+// URL ကနေ ဘယ် Page ကို ရောက်နေလဲဆိုတာ သိအောင် အရင်ယူမယ်
+const urlParams = new URLSearchParams(window.location.search);
+const currentPageId = urlParams.get('pageId') || "main"; // default က main page
+
+function loadBranding() {
+    db.collection("page_info").doc(currentPageId).onSnapshot(d => {
+        if(d.exists){
+            const data = d.data();
+            document.getElementById('coverDisplay').src = data.cover;
+            document.getElementById('profileDisplay').src = data.profile;
+            document.getElementById('pageNameHeader').innerText = data.pageTitle;
+        }
+    });
+}
+
+function loadPosts() {
+    // လက်ရှိကြည့်နေတဲ့ pageId နဲ့ ဆိုင်တဲ့ Post တွေကိုပဲ စစ်ထုတ် (Filter) ပြီး ပြမယ်
+    db.collection("page_posts")
+      .where("pageId", "==", currentPageId) // ဒါအရေးကြီးပါတယ်
+      .orderBy("isPinned", "desc")
+      .orderBy("createdAt", "desc")
+      .onSnapshot(snap => {
+          const feed = document.getElementById('feed');
+          feed.innerHTML = ""; // Page ပြောင်းရင် Feed အဟောင်းကို ရှင်းမယ်
+          snap.forEach(doc => {
+              const d = doc.data(); const id = doc.id;
+              renderPost(id, d); // Post တစ်ခုချင်းစီကို UI ထုတ်ပေးတဲ့ function
+          });
+      });
+}
+async function searchPage() {
+    const query = document.getElementById('pageSearchInput').value.trim();
+    const resultsDiv = document.getElementById('searchResults');
+    if(!query) return;
+
+    resultsDiv.innerHTML = "Searching...";
+    resultsDiv.style.display = "block";
+
+    // Database ထဲမှာ Page နာမည်နဲ့ တိုက်ရိုက်ရှာမယ်
+    const snap = await db.collection("page_info").where("pageTitle", "==", query).get();
+
+    if(snap.empty) {
+        resultsDiv.innerHTML = "<div style='padding:10px; color:red;'>ရှာမတွေ့ပါ!</div>";
+    } else {
+        resultsDiv.innerHTML = "";
+        snap.forEach(doc => {
+            const data = doc.data();
+            resultsDiv.innerHTML += `
+                <div onclick="window.location.href='index.html?pageId=${doc.id}'" 
+                     style="display:flex; align-items:center; gap:10px; padding:10px; border-bottom:1px solid #eee; cursor:pointer;">
+                    <img src="${data.profile}" style="width:35px; height:35px; border-radius:50%;">
+                    <span style="font-weight:bold;">${data.pageTitle}</span>
+                </div>`;
+        });
+    }
+}
+
+</script>
+</body>
+</html>
