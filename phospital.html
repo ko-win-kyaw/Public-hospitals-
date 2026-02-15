@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Page - Senior Final Master</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <style>
+        :root { --p: #800080; --bg: #f0f2f5; }
+        body { background: var(--bg); margin: 0; font-family: sans-serif; padding-bottom: 70px; }
+        .header-box { background: white; border-radius: 0 0 20px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding-bottom: 12px; }
+        .cover-area { width: 100%; height: 180px; background: #ddd; position: relative; overflow: hidden; }
+        .cover-img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-area { padding: 15px; margin-top: -50px; display: flex; align-items: flex-end; gap: 12px; }
+        .p-img { width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; object-fit: cover; background: #eee; }
+        .card { background: white; margin: 12px; padding: 15px; border-radius: 12px; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .post-media { width: 100%; border-radius: 8px; margin-top: 10px; background: #000; max-height: 400px; }
+        .admin-only { display: none; }
+        .interaction { display: flex; justify-content: space-around; border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; font-size: 12px; font-weight: bold; }
+        .btn-main { background: var(--p); color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; }
+        .search-container { margin: 10px 15px; position: relative; }
+        .search-box { display: flex; background: #f0f2f5; border-radius: 20px; padding: 8px 15px; border: 1px solid #ddd; align-items: center; }
+        .search-box input { border: none; outline: none; flex: 1; background: transparent; padding-left: 5px; }
+        #searchResults { position: absolute; width: 100%; background: white; z-index: 100; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); top: 45px; display: none; }
+        .search-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .comment-box { margin-top: 10px; border-top: 1px solid #eee; display: none; }
+        .c-item { background: #f0f2f5; padding: 10px; border-radius: 12px; margin-top: 8px; font-size: 13px; position: relative; }
+        .c-reacts { font-size: 11px; margin-top: 5px; display: flex; gap: 12px; color: #555; font-weight: bold; }
+        .time-label { font-size: 10px; color: #999; }
+    </style>
+</head>
+<body>
+
+    <div class="header-box">
+        <div class="cover-area">
+            <img id="coverDisplay" class="cover-img" src="">
+            <label class="admin-only" style="position:absolute; bottom:10px; right:10px; background:rgba(0,0,0,0.5); padding:8px; border-radius:50%; color:white; cursor:pointer;">📸<input type="file" hidden onchange="uploadBranding('cover', this)"></label>
+        </div>
+        <div class="profile-area">
+            <div style="position:relative;">
+                <img id="profileDisplay" class="p-img" src="">
+                <label class="admin-only" style="position:absolute; bottom:5px; right:0; background:rgba(0,0,0,0.5); padding:5px; border-radius:50%; color:white; cursor:pointer;">📷<input type="file" hidden onchange="uploadBranding('profile', this)"></label>
+            </div>
+            <div style="flex:1;">
+                <h2 id="pageNameHeader" style="font-size: 17px; margin:0; display:inline-block;">Emotion Community</h2>
+                <span class="admin-only" onclick="updatePageTitle()" style="cursor:pointer; font-size:12px;">✏️</span>
+                <p id="memberCount" style="font-size: 11px; color: gray;">0 Members</p>
+            </div>
+            <div id="statusArea"></div>
+        </div>
+        <div class="search-container">
+            <div class="search-box"><span>🔍</span><input type="text" id="pageSearch" placeholder="Search pages..." onkeyup="searchPage()"></div>
+            <div id="searchResults"></div>
+        </div>
+    </div>
+
+    <div id="postBox" class="card admin-only">
+        <textarea id="postText" rows="3" placeholder="ဘာတွေဝေမျှချင်လဲ Senior..." style="width:100%; border:none; outline:none; font-size:15px; resize:none;"></textarea>
+        <div id="mediaPreview" style="margin-top:10px; display:none;"></div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px; align-items:center;">
+            <label style="cursor:pointer; color:var(--p); font-size:13px; font-weight:bold;">🖼️ Media <input type="file" id="mediaInput" accept="image/*,video/*" hidden onchange="previewMedia(this)"></label>
+            <button class="btn-main" id="btnPost" onclick="handlePost()">Post</button>
+        </div>
+    </div>
+
+    <div id="feed"></div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    const BUNNY_KEY = "a038d7e1-bf94-448b-b863c156422e-7e4a-4299";
+    const BUNNY_STORAGE = "public-hospitals";
+    const ADMIN_EMAIL = "uwinkyawdevelopbusinessco@gmail.com";
+
+    auth.onAuthStateChanged(async user => {
+        if (user) {
+            const blockCheck = await db.collection("blocked_users").doc(user.uid).get();
+            if (blockCheck.exists) { alert("Blocked by Admin!"); auth.signOut(); return; }
+            loadBranding(); loadPosts(); loadMembers(); listenNoti();
+            if (user.email === ADMIN_EMAIL) { showAdmin(); } else { checkStatus(user.uid); }
+        } else { window.location.href = "user.html"; }
+    });
+
+    function showAdmin() { document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block'); }
+    function formatTime(t) { return new Date(t).toLocaleString(); }
+
+    // --- Bunny Storage Upload (Fix) ---
+    async function uploadToBunny(file) {
+        const fileName = `${Date.now()}_${file.name}`;
+        const url = `https://storage.bunnycdn.com/${BUNNY_STORAGE}/${fileName}`;
+        const res = await fetch(url, { method: 'PUT', headers: { 'AccessKey': BUNNY_KEY, 'Content-Type': 'application/octet-stream' }, body: file });
+        return res.ok ? `https://public-hospitals.b-cdn.net/${fileName}` : null;
+    }
+
+    // --- Media Preview (Fix) ---
+    function previewMedia(input) {
+        const file = input.files[0];
+        const preview = document.getElementById('mediaPreview');
+        preview.style.display = "block";
+        const url = URL.createObjectURL(file);
+        preview.innerHTML = file.type.startsWith('video') ? `<video src="${url}" controls style="width:100%; border-radius:8px;"></video>` : `<img src="${url}" style="width:100%; border-radius:8px;">`;
+    }
+// --- Media Upload Logic (Image -> ImgBB, Video -> Bunny) ---
+async function handlePost() {
+    const text = document.getElementById('postText').value;
+    const file = document.getElementById('mediaInput').files[0];
+    const btn = document.getElementById('btnPost');
+    
+    if(!text && !file) return alert("ဝေမျှဖို့ တစ်ခုခုရေးပါဦး Senior!");
+
+    btn.disabled = true; 
+    btn.innerText = "Uploading Media...";
+    
+    let mediaUrl = ""; 
+    let mediaType = "";
+
+    if (file) {
+        if (file.type.startsWith('video')) {
+            // --- ဗီဒီယိုဆိုရင် Bunny ကိုပို့မယ် ---
+            btn.innerText = "Uploading Video to Bunny...";
+            mediaUrl = await uploadToBunny(file);
+            mediaType = 'video';
+        } else {
+            // --- ဓာတ်ပုံဆိုရင် ImgBB ကိုပို့မယ် ---
+            btn.innerText = "Uploading Image to ImgBB...";
+            const fd = new FormData();
+            fd.append('image', file);
+            try {
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { 
+                    method: 'POST', 
+                    body: fd 
+                });
+                const d = await res.json();
+                if (d.success) {
+                    mediaUrl = d.data.url;
+                    mediaType = 'image';
+                }
+            } catch (err) {
+                console.error("ImgBB Upload Error:", err);
+            }
+        }
+    }
+
+    if (file && !mediaUrl) {
+        alert("Media တင်ရတာ အဆင်မပြေဖြစ်သွားပါတယ် Senior!");
+        btn.disabled = false;
+        btn.innerText = "Post";
+        return;
+    }
+
+    // Firestore ထဲ သိမ်းမယ်
+    await db.collection("page_posts").add({ 
+        text, 
+        mediaUrl, 
+        mediaType, 
+        createdAt: Date.now(), 
+        likes: 0, 
+        hahas: 0, 
+        views: 0, 
+        commentsCount: 0, 
+        isPinned: false, 
+        author: "Admin" 
+    });
+
+    location.reload();
+}
+
+// Bunny Upload Function (ဒါက အရင်အတိုင်းပဲ ထားပေးပါ)
+async function uploadToBunny(file) {
+    const fileName = `${Date.now()}_${file.name}`;
+    const url = `https://storage.bunnycdn.com/${BUNNY_STORAGE}/${fileName}`;
+    const res = await fetch(url, { 
+        method: 'PUT', 
+        headers: { 
+            'AccessKey': BUNNY_KEY, 
+            'Content-Type': 'application/octet-stream' 
+        }, 
+        body: file 
+    });
+    return res.ok ? `https://public-hospitals.b-cdn.net/${fileName}` : null;
+}
+
+
+
+    // --- Loading & Admin Tools (Pin/Delete/Block) ---
+    function loadPosts() {
+        db.collection("page_posts").orderBy("isPinned", "desc").orderBy("createdAt", "desc").onSnapshot(snap => {
+            const feed = document.getElementById('feed');
+            snap.docChanges().forEach(change => {
+                const d = change.doc.data(); const id = change.doc.id;
+                if (change.type === "added") {
+                    const div = document.createElement('div'); div.className = "card"; div.id = `post-${id}`;
+                    div.innerHTML = `
+                        ${d.isPinned ? '<small style="color:purple;">📌 Pinned</small>' : ''}
+                        <div style="font-size:12px; color:gray; margin-bottom:8px;">
+                            <b>${d.author}</b> • <span id="v-${id}">${d.views || 0}</span> views <br>
+                            <span class="time-label">${formatTime(d.createdAt)}</span>
+                            ${(auth.currentUser.email === ADMIN_EMAIL) ? `<span onclick="deletePost('${id}')" style="float:right; cursor:pointer; color:red;">🗑️</span> <span onclick="togglePin('${id}',${d.isPinned})" style="float:right; margin-right:10px; cursor:pointer;">📌</span>` : ''}
+                        </div>
+                        <p style="white-space:pre-wrap;">${d.text}</p>
+                        ${d.mediaUrl ? (d.mediaType==='video' ? `<video src="${d.mediaUrl}" controls class="post-media"></video>` : `<img src="${d.mediaUrl}" class="post-media">`) : ''}
+                        <div class="interaction">
+                            <span onclick="handleReact('${id}','likes')" style="cursor:pointer;">👍 <span id="l-${id}">${d.likes}</span></span>
+                            <span onclick="handleReact('${id}','hahas')" style="cursor:pointer;">😆 <span id="h-${id}">${d.hahas}</span></span>
+                            <span onclick="toggleC('${id}')" style="cursor:pointer;">💬 <span id="cc-${id}">${d.commentsCount || 0}</span></span>
+                            <span onclick="sharePost('${id}')" style="cursor:pointer; color:purple;">🚀 Share</span>
+                        </div>
+                        <div class="comment-box" id="cb-${id}">
+                            <div id="cl-${id}"></div>
+                            <div style="display:flex; margin-top:10px; gap:5px;">
+                                <input type="text" id="cInput-${id}" placeholder="Write a comment..." style="flex:1; border-radius:15px; border:1px solid #ddd; padding:5px 10px; outline:none;">
+                                <button onclick="addComment('${id}')" style="border:none; background:purple; color:white; border-radius:15px; padding:5px 12px;">Send</button>
+                            </div>
+                        </div>`;
+                    feed.appendChild(div);
+                    db.collection("page_posts").doc(id).update({ views: firebase.firestore.FieldValue.increment(1) });
+                    loadComments(id);
+                }
+            });
+        });
+    }
+
+    async function addComment(pid) {
+        const val = document.getElementById(`cInput-${pid}`).value;
+        if(!val) return;
+        await db.collection("page_posts").doc(pid).collection("comments").add({ author: auth.currentUser.displayName || "User", uid: auth.currentUser.uid, text: val, createdAt: Date.now(), likes: 0, hahas: 0 });
+        await db.collection("page_posts").doc(pid).update({ commentsCount: firebase.firestore.FieldValue.increment(1) });
+        sendNoti(`${auth.currentUser.displayName} က Comment ရေးလိုက်ပါတယ်`);
+        document.getElementById(`cInput-${pid}`).value = "";
+    }
+
+    function loadComments(pid) {
+        db.collection("page_posts").doc(pid).collection("comments").orderBy("createdAt", "asc").onSnapshot(snap => {
+            const list = document.getElementById(`cl-${pid}`); list.innerHTML = "";
+            snap.forEach(doc => {
+                const c = doc.data(); const cid = doc.id;
+                list.innerHTML += `
+                    <div class="c-item">
+                        <b>${c.author}</b>: ${c.text}
+                        <div class="c-reacts">
+                            <span onclick="reactComment('${pid}','${cid}','likes')" style="cursor:pointer;">👍 ${c.likes||0}</span>
+                            <span onclick="reactComment('${pid}','${cid}','hahas')" style="cursor:pointer;">😆 ${c.hahas||0}</span>
+                            ${(auth.currentUser.email === ADMIN_EMAIL) ? `<span onclick="deleteComment('${pid}','${cid}')" style="color:red; cursor:pointer;">🗑️ Delete</span> <span onclick="blockUser('${c.uid}')" style="color:black; cursor:pointer;">🚫 Block</span>` : ''}
+                        </div>
+                    </div>`;
+            });
+        });
+    }
+
+    // --- Admin Tools & Share Logic ---
+    async function deletePost(id) { if(confirm("Delete Post?")) await db.collection("page_posts").doc(id).delete(); }
+    async function togglePin(id, cur) { await db.collection("page_posts").doc(id).update({ isPinned: !cur }); }
+    async function deleteComment(pid, cid) { await db.collection("page_posts").doc(pid).collection("comments").doc(cid).delete(); }
+    async function blockUser(uid) { if(confirm("Block User?")) await db.collection("blocked_users").doc(uid).set({ blockedAt: Date.now() }); }
+    async function handleReact(id, type) { await db.collection("page_posts").doc(id).update({ [type]: firebase.firestore.FieldValue.increment(1) }); }
+    async function reactComment(pid, cid, type) { await db.collection("page_posts").doc(pid).collection("comments").doc(cid).update({ [type]: firebase.firestore.FieldValue.increment(1) }); }
+    
+    async function sharePost(id) {
+        const s = await db.collection("page_posts").doc(id).get();
+        await db.collection("health_posts").add({ ...s.data(), uid: auth.currentUser.uid, isShared: true, createdAt: Date.now() });
+        alert("Shared to Profile!");
+    }
+
+    // --- Search & Noti & Status ---
+    async function sendNoti(msg) { await db.collection("notifications").add({ receiverId: ADMIN_EMAIL, message: msg, sender: auth.currentUser.displayName, createdAt: Date.now(), status: "unread" }); }
+    function listenNoti() { if(auth.currentUser.email === ADMIN_EMAIL) { db.collection("notifications").where("status","==","unread").onSnapshot(s => s.docChanges().forEach(c => { if(c.type==="added") alert("🔔 " + c.doc.data().message); })); }}
+
+    async function searchPage() {
+        const q = document.getElementById('pageSearch').value.toLowerCase();
+        const res = document.getElementById('searchResults');
+        if(!q) { res.style.display="none"; return; }
+        const snap = await db.collection("page_info").get();
+        res.innerHTML = "";
+        snap.forEach(doc => { if(doc.data().pageTitle.toLowerCase().includes(q)) { res.style.display="block"; res.innerHTML += `<div class="search-item" onclick="location.reload()">📄 ${doc.data().pageTitle}</div>`; }});
+    }
+
+    async function checkStatus(uid) {
+        const isJoined = (await db.collection("page_members").doc(uid).get()).exists;
+        if (!isJoined) document.getElementById('statusArea').innerHTML = `<button class="btn-main" onclick="joinPage()">Join</button>`;
+    }
+    async function joinPage() { await db.collection("page_members").doc(auth.currentUser.uid).set({ joinedAt: Date.now() }); location.reload(); }
+    function toggleC(id) { const b = document.getElementById(`cb-${id}`); b.style.display = b.style.display==='block'?'none':'block'; }
+    function loadBranding() { db.collection("page_info").doc("main").onSnapshot(d => { if(d.exists){ document.getElementById('coverDisplay').src = d.data().cover; document.getElementById('profileDisplay').src = d.data().profile; document.getElementById('pageNameHeader').innerText = d.data().pageTitle; }}); }
+    function loadMembers() { db.collection("page_members").onSnapshot(s => document.getElementById('memberCount').innerText = `${s.size} Members`); }
+</script>
+</body>
+</html>
