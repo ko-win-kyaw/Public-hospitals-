@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Page - Elite Master</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <style>
+        :root { --p: #800080; --bg: #f0f2f5; }
+        body { background: var(--bg); margin: 0; font-family: sans-serif; padding-bottom: 70px; }
+        .header-box { background: white; border-radius: 0 0 20px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding-bottom: 10px; }
+        .cover-area { width: 100%; height: 180px; background: #ddd; position: relative; }
+        .cover-img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-area { padding: 15px; margin-top: -50px; display: flex; align-items: flex-end; gap: 12px; }
+        .p-img { width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; object-fit: cover; background: #eee; }
+        .card { background: white; margin: 12px; padding: 15px; border-radius: 12px; position: relative; }
+        .post-media { width: 100%; border-radius: 8px; margin-top: 10px; background: #000; }
+        .admin-only { display: none; }
+        .interaction { display: flex; justify-content: space-around; border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; font-size: 13px; font-weight: bold; }
+        .btn-main { background: var(--p); color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; }
+        
+        /* Search System Styles */
+        .search-container { margin: 10px 15px; position: relative; }
+        .search-box { display: flex; background: #f0f2f5; border-radius: 20px; padding: 8px 15px; border: 1px solid #ddd; align-items: center; }
+        .search-box input { border: none; outline: none; flex: 1; background: transparent; padding-left: 5px; }
+        #searchResults { position: absolute; width: 100%; background: white; z-index: 100; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); top: 45px; display: none; }
+        .search-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        
+        .comment-box { margin-top: 10px; border-top: 1px solid #eee; display: none; }
+        .c-item { background: #f0f2f5; padding: 8px; border-radius: 10px; margin-top: 5px; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+    <div class="header-box">
+        <div class="cover-area">
+            <img id="coverDisplay" class="cover-img" src="">
+            <label class="admin-only" style="position:absolute; bottom:10px; right:10px; background:rgba(0,0,0,0.5); padding:8px; border-radius:50%; color:white; cursor:pointer;">📸<input type="file" hidden onchange="uploadBranding('cover', this)"></label>
+        </div>
+        <div class="profile-area">
+            <div style="position:relative;">
+                <img id="profileDisplay" class="p-img" src="">
+                <label class="admin-only" style="position:absolute; bottom:5px; right:0; background:rgba(0,0,0,0.5); padding:5px; border-radius:50%; color:white; cursor:pointer;">📷<input type="file" hidden onchange="uploadBranding('profile', this)"></label>
+            </div>
+            <div>
+                <h2 id="pageNameHeader" style="font-size: 17px;">Emotion Community</h2>
+                <p id="memberCount" style="font-size: 11px; color: gray;">0 Members</p>
+            </div>
+            <div id="statusArea" style="margin-left: auto;"></div>
+        </div>
+
+        <div class="search-container">
+            <div class="search-box">
+                <span>🔍</span>
+                <input type="text" id="pageSearch" placeholder="Search page name..." onkeyup="searchPage()">
+            </div>
+            <div id="searchResults"></div>
+        </div>
+    </div>
+
+    <div id="postBox" class="card admin-only">
+        <textarea id="postText" rows="3" placeholder="ဘာတွေဝေမျှချင်လဲ Senior..." style="width:100%; border:none; outline:none; font-size:15px;"></textarea>
+        <div id="mediaPreview" style="margin-top:10px; display:none;"></div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px; align-items:center;">
+            <label style="cursor:pointer; color:var(--p); font-size:13px; font-weight:bold;">🖼️ Media <input type="file" id="mediaInput" hidden onchange="previewMedia(this)"></label>
+            <button class="btn-main" id="btnPost" onclick="handlePost()">Post</button>
+        </div>
+    </div>
+
+    <div id="feed"></div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    const IMGBB_KEY = "C8d8d00185e973ebcafddd34f77a1176";
+    const BUNNY_KEY = "a038d7e1-bf94-448b-b863c156422e-7e4a-4299";
+    const BUNNY_STORAGE = "public-hospitals";
+    const ADMIN_EMAIL = "uwinkyawdevelopbusinessco@gmail.com";
+
+    // Auth Guard: Login မဝင်ထားရင် User.html ကနေ login.html ကို မောင်းထုတ်မယ်
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            loadBranding(); loadPosts(); loadMembers(); listenNoti();
+            if (user.email === ADMIN_EMAIL) { showAdmin(); } else { checkStatus(user.uid); }
+        } else { 
+            // Senior ရဲ့ user.html ဖြစ်ဖြစ် ဒီ page ဖြစ်ဖြစ် login မဝင်ရင် redirect လုပ်မယ်
+            window.location.href = "user.html"; 
+        }
+    });
+
+    function showAdmin() { document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block'); }
+
+    // --- Suresh Search System (Page Name) ---
+    async function searchPage() {
+        const query = document.getElementById('pageSearch').value.toLowerCase();
+        const resBox = document.getElementById('searchResults');
+        if (!query) { resBox.style.display = "none"; return; }
+
+        // Firestore က page_info ထဲမှာ နာမည်နဲ့ရှာမယ်
+        const snap = await db.collection("page_info").get();
+        resBox.innerHTML = "";
+        let found = false;
+
+        snap.forEach(doc => {
+            const data = doc.data();
+            const name = (data.pageTitle || "Emotion Community").toLowerCase();
+            if (name.includes(query)) {
+                found = true;
+                resBox.style.display = "block";
+                resBox.innerHTML += `
+                    <div class="search-item" onclick="location.reload()">
+                        <img src="${data.profile || ''}" style="width:30px; height:30px; border-radius:50%;">
+                        <div>
+                            <div style="font-size:14px; font-weight:bold;">${data.pageTitle || 'Emotion Community'}</div>
+                            <div style="font-size:11px; color:gray;">Official Page</div>
+                        </div>
+                    </div>`;
+            }
+        });
+        if(!found) resBox.style.display = "none";
+    }
+
+    // --- View Count System (Intersection Observer) ---
+    const viewObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const postId = entry.target.dataset.id;
+                db.collection("page_posts").doc(postId).update({
+                    views: firebase.firestore.FieldValue.increment(1)
+                });
+                viewObserver.unobserve(entry.target); // တစ်ခါကြည့်ရင် တစ်ခါပဲတိုးမယ်
+            }
+        });
+    }, { threshold: 0.6 });
+
+    // --- Real-time Post Loading (Refresh မဖြစ်စေရ) ---
+    function loadPosts() {
+        db.collection("page_posts").orderBy("isPinned", "desc").orderBy("createdAt", "desc").onSnapshot(snap => {
+            const feed = document.getElementById('feed');
+            snap.docChanges().forEach(change => {
+                const d = change.doc.data(); const id = change.doc.id;
+                if (change.type === "added") {
+                    const div = document.createElement('div'); div.className = "card"; div.id = `post-${id}`; div.dataset.id = id;
+                    div.innerHTML = `
+                        <div style="font-size:12px; color:gray; margin-bottom:8px;"><b>${d.author}</b> • <span id="v-${id}">${d.views || 0}</span> views</div>
+                        <p style="white-space:pre-wrap;">${d.text}</p>
+                        ${d.mediaUrl ? (d.mediaType==='video' ? `<video src="${d.mediaUrl}" controls class="post-media"></video>` : `<img src="${d.mediaUrl}" class="post-media">`) : ''}
+                        <div class="interaction">
+                            <span onclick="handleReact('${id}','likes')" style="cursor:pointer;">👍 <span id="l-${id}">${d.likes}</span></span>
+                            <span onclick="handleReact('${id}','hahas')" style="cursor:pointer;">😆 <span id="h-${id}">${d.hahas}</span></span>
+                            <span onclick="toggleC('${id}')" style="cursor:pointer;">💬 <span id="cc-${id}">${d.commentsCount || 0}</span></span>
+                            <span onclick="sharePost('${id}')" style="cursor:pointer; color:purple;">🚀 Share</span>
+                        </div>
+                        <div class="comment-box" id="cb-${id}">
+                            <div id="cl-${id}"></div>
+                            <div class="input-group" style="display:flex; margin-top:10px; gap:5px;">
+                                <input type="text" id="cInput-${id}" placeholder="Write a comment..." style="flex:1; border-radius:15px; border:1px solid #ddd; padding:5px 10px; outline:none;">
+                                <button onclick="addComment('${id}')" style="border:none; background:purple; color:white; border-radius:15px; padding:5px 12px;">Send</button>
+                            </div>
+                        </div>`;
+                    feed.appendChild(div);
+                    viewObserver.observe(div); // View count အတွက် observer စတင်မယ်
+                    loadComments(id);
+                }
+                if (change.type === "modified") {
+                    document.getElementById(`l-${id}`).innerText = d.likes;
+                    document.getElementById(`h-${id}`).innerText = d.hahas;
+                    document.getElementById(`cc-${id}`).innerText = d.commentsCount;
+                    document.getElementById(`v-${id}`).innerText = d.views || 0;
+                }
+            });
+        });
+    }
+
+    // --- မူလရှိပြီးသား Functions များ (တစ်ချက်မှ မကျန်စေရန်) ---
+    async function handlePost() {
+        const text = document.getElementById('postText').value;
+        const file = document.getElementById('mediaInput').files[0];
+        const btn = document.getElementById('btnPost');
+        if (file && file.size > 30 * 1024 * 1024) return alert("30MB limit!");
+        btn.disabled = true; btn.innerText = "Posting...";
+        let mediaUrl = "", mediaType = "";
+        if (file) {
+            if (file.type.startsWith('video/')) {
+                const name = `${Date.now()}_v`;
+                const res = await fetch(`https://sg.storage.bunnycdn.com/${BUNNY_STORAGE}/${name}`, {
+                    method: 'PUT', headers: { 'AccessKey': BUNNY_KEY }, body: file
+                });
+                if (res.ok) mediaUrl = `https://public-hospitals.b-cdn.net/${name}`, mediaType = "video";
+            } else {
+                const fd = new FormData(); fd.append('image', file);
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd });
+                const d = await res.json();
+                if (d.success) mediaUrl = d.data.url, mediaType = "image";
+            }
+        }
+        await db.collection("page_posts").add({ text, mediaUrl, mediaType, createdAt: Date.now(), likes:0, hahas:0, views:0, commentsCount:0, isPinned:false, author:"Admin" });
+        location.reload();
+    }
+
+    async function handleReact(id, type) {
+        const rRef = db.collection("page_posts").doc(id).collection("reactions").doc(auth.currentUser.uid);
+        if ((await rRef.get()).exists) return;
+        await rRef.set({ type, time: Date.now() });
+        await db.collection("page_posts").doc(id).update({ [type]: firebase.firestore.FieldValue.increment(1) });
+    }
+
+    async function addComment(id) {
+        const val = document.getElementById(`cInput-${id}`).value;
+        if(!val) return;
+        await db.collection("page_posts").doc(id).collection("comments").add({ author: auth.currentUser.displayName, text: val, createdAt: Date.now() });
+        await db.collection("page_posts").doc(id).update({ commentsCount: firebase.firestore.FieldValue.increment(1) });
+        document.getElementById(`cInput-${id}`).value = "";
+    }
+
+    async function loadComments(id) {
+        db.collection("page_posts").doc(id).collection("comments").orderBy("createdAt", "asc").onSnapshot(s => {
+            const l = document.getElementById(`cl-${id}`); l.innerHTML = "";
+            s.forEach(doc => { l.innerHTML += `<div class="c-item"><b>${doc.data().author}</b>: ${doc.data().text}</div>`; });
+        });
+    }
+
+    function toggleC(id) { const b = document.getElementById(`cb-${id}`); b.style.display = b.style.display==='block'?'none':'block'; }
+    async function joinPage() { await db.collection("page_members").doc(auth.currentUser.uid).set({ uid: auth.currentUser.uid, joinedAt: Date.now() }); location.reload(); }
+    async function reqCreate() { 
+        await db.collection("users").doc(auth.currentUser.uid).update({ isRequestPending: true });
+        alert("Request Sent to Developer!"); 
+    }
+    function previewMedia(i) { const f = i.files[0]; const b = document.getElementById('mediaPreview'); b.style.display="block"; b.innerHTML = f.type.startsWith('video')?`<video src="${URL.createObjectURL(f)}" style="width:100%" muted autoplay loop></video>`:`<img src="${URL.createObjectURL(f)}" style="width:100%; border-radius:8px;">`; }
+    function loadBranding() { db.collection("page_info").doc("main").onSnapshot(d => { if(d.exists){ document.getElementById('coverDisplay').src = d.data().cover; document.getElementById('profileDisplay').src = d.data().profile; document.getElementById('pageNameHeader').innerText = d.data().pageTitle || "Emotion Community"; }}); }
+    function loadMembers() { db.collection("page_members").onSnapshot(s => document.getElementById('memberCount').innerText = `${s.size} Members`); }
+    async function checkStatus(uid) { 
+        const uDoc = await db.collection("users").doc(uid).get();
+        const isJoined = (await db.collection("page_members").doc(uid).get()).exists;
+        const area = document.getElementById('statusArea');
+        if(!isJoined) area.innerHTML = `<button class="btn-main" onclick="joinPage()">Join</button> <button class="btn-main" style="background:#444;" onclick="reqCreate()">Create</button>`;
+        else if(uDoc.data()?.isRequestPending) area.innerHTML = `<small style="color:orange;">Pending Dev Approval...</small>`;
+    }
+</script>
+</body>
+</html>
