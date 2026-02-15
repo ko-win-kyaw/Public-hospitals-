@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Community - Elite</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+    <style>
+        :root { --purple: #800080; --bg: #f0f2f5; --glass: rgba(255, 255, 255, 0.9); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); padding-bottom: 80px; overflow-x: hidden; }
+
+        /* Header & Branding */
+        .header-container { background: white; position: relative; border-radius: 0 0 20px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .cover-photo { width: 100%; height: 200px; object-fit: cover; background: #ddd; }
+        .profile-section { position: relative; padding: 0 15px; margin-top: -60px; display: flex; align-items: flex-end; gap: 15px; padding-bottom: 15px; }
+        .admin-img { width: 110px; height: 110px; border-radius: 50%; border: 4px solid white; object-fit: cover; background: #eee; }
+        .edit-badge { position: absolute; background: rgba(0,0,0,0.6); color: white; padding: 5px; border-radius: 50%; cursor: pointer; bottom: 5px; right: 5px; font-size: 14px; }
+
+        /* Buttons & Interactions */
+        .btn-main { background: var(--purple); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .card { background: white; margin: 12px; padding: 15px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        
+        /* Posts & Reactions */
+        .post-card { background: white; margin: 12px; padding: 15px; border-radius: 15px; position: relative; }
+        .pinned-badge { color: var(--purple); font-size: 12px; font-weight: bold; margin-bottom: 5px; display: block; }
+        .post-media { width: 100%; border-radius: 12px; margin-top: 10px; max-height: 500px; object-fit: cover; }
+        .reaction-bar { display: flex; gap: 15px; margin-top: 12px; border-top: 1px solid #eee; padding-top: 10px; }
+        .react-btn { cursor: pointer; padding: 5px 10px; border-radius: 20px; background: #f0f2f5; font-size: 13px; }
+
+        /* Comment System */
+        .comment-section { margin-top: 10px; display: none; }
+        .comment-item { background: #f0f2f5; padding: 8px 12px; border-radius: 12px; margin-top: 5px; font-size: 14px; }
+
+        .admin-only { display: none; }
+        #loading-overlay { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+<div id="loading-overlay">🚀 Loading Senior's Page...</div>
+
+<div class="header-container">
+    <div style="position:relative;">
+        <img id="coverDisplay" class="cover-photo" src="https://via.placeholder.com/800x200">
+        <label class="edit-badge admin-only">📸<input type="file" hidden onchange="uploadToImgBB(this, 'cover')"></label>
+    </div>
+    <div class="profile-section">
+        <div style="position:relative;">
+            <img id="profileDisplay" class="admin-img" src="https://via.placeholder.com/150">
+            <label class="edit-badge admin-only">📷<input type="file" hidden onchange="uploadToImgBB(this, 'profile')"></label>
+        </div>
+        <div class="page-meta">
+            <h2 id="pageTitle">Emotion Community</h2>
+            <p id="memberCount" style="font-size: 13px; color: gray;">0 Members</p>
+        </div>
+        <div id="authActions" style="margin-left: auto; display: flex; gap: 8px;"></div>
+    </div>
+</div>
+
+<div id="adminPostBox" class="card admin-only">
+    <textarea id="postContent" placeholder="ဘာတွေဝေမျှချင်လဲ Senior..." style="width:100%; border:none; outline:none; font-size:16px; resize:none; min-height:60px;"></textarea>
+    <div id="mediaPreview" style="margin-top:10px;"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+        <label style="cursor:pointer; color:var(--purple); font-weight:bold;">🖼️ Media (Max 30MB) <input type="file" id="mediaInput" hidden onchange="previewMedia(this)"></label>
+        <button class="btn-main" onclick="handlePostUpload()">Post</button>
+    </div>
+</div>
+
+<div id="pageFeed"></div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    const IMGBB_KEY = "C8d8d00185e973ebcafddd34f77a1176";
+    let currentUser = null;
+    let isAdmin = false;
+
+    auth.onAuthStateChanged(async user => {
+        if (user) {
+            currentUser = user;
+            const userDoc = await db.collection("users").doc(user.uid).get();
+            const userData = userDoc.data() || {};
+            isAdmin = userData.isPremium || false;
+
+            if (isAdmin) document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            
+            updateBranding();
+            updateAuthUI(userData);
+            loadPosts();
+            loadMembers();
+            document.getElementById('loading-overlay').style.display = 'none';
+        } else {
+            window.location.href = "login.html";
+        }
+    });
+
+    // Branding Load
+    function updateBranding() {
+        db.collection("page_info").doc("main").onSnapshot(doc => {
+            if(doc.exists) {
+                const d = doc.data();
+                if(d.cover) document.getElementById('coverDisplay').src = d.cover;
+                if(d.profile) document.getElementById('profileDisplay').src = d.profile;
+            }
+        });
+    }
+
+    // Media Preview & Upload
+    function previewMedia(input) {
+        const file = input.files[0];
+        if (file.size > 30 * 1024 * 1024) return alert("30MB ထက်မကျော်ရပါ Senior!");
+        const preview = document.getElementById('mediaPreview');
+        preview.innerHTML = file.type.startsWith('video') ? 
+            `<video src="${URL.createObjectURL(file)}" style="width:100%;" controls></video>` :
+            `<img src="${URL.createObjectURL(file)}" style="width:100%; border-radius:10px;">`;
+    }
+
+    async function uploadToImgBB(input, type) {
+        const file = input.files[0];
+        const fd = new FormData(); fd.append('image', file);
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd });
+        const data = await res.json();
+        await db.collection("page_info").doc("main").set({ [type]: data.data.url }, { merge: true });
+    }
+
+    // Auth UI (Join/Create)
+    async function updateAuthUI(userData) {
+        const actions = document.getElementById('authActions');
+        const memberDoc = await db.collection("page_members").doc(currentUser.uid).get();
+        
+        if (!memberDoc.exists) {
+            actions.innerHTML = `
+                <button class="btn-main" onclick="joinPage()">Join</button>
+                <button class="btn-main" style="background:#444;" onclick="requestCreatePage()">Create</button>
+            `;
+        }
+        if (userData.isRequestPending) {
+            actions.innerHTML = `<span style="font-size:12px; color:orange;">Developer approval pending...</span>`;
+        }
+    }
+
+    async function joinPage() {
+        await db.collection("page_members").doc(currentUser.uid).set({
+            uid: currentUser.uid, name: currentUser.displayName, photo: currentUser.photoURL, joinedAt: Date.now()
+        });
+        location.reload();
+    }
+
+    async function requestCreatePage() {
+        await db.collection("users").doc(currentUser.uid).update({ isRequestPending: true });
+        await db.collection("admin_requests").doc(currentUser.uid).set({
+            uid: currentUser.uid, name: currentUser.displayName, status: "pending", time: Date.now()
+        });
+        alert("Developer ထံသို့ ခွင့်ပြုချက်ပို့ထားပါပြီ Senior!");
+        location.reload();
+    }
+
+    // Post System
+    async function handlePostUpload() {
+        const text = document.getElementById('postContent').value;
+        const file = document.getElementById('mediaInput').files[0];
+        let mediaUrl = "";
+
+        if(file) {
+            const fd = new FormData(); fd.append('image', file);
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd });
+            const data = await res.json();
+            mediaUrl = data.data.url;
+        }
+
+        await db.collection("page_posts").add({
+            text, mediaUrl, author: "Admin", createdAt: Date.now(), 
+            likes: 0, hahas: 0, isPinned: false
+        });
+        location.reload();
+    }
+
+    function loadPosts() {
+        db.collection("page_posts").orderBy("isPinned", "desc").orderBy("createdAt", "desc").onSnapshot(snap => {
+            const feed = document.getElementById('pageFeed');
+            snap.docChanges().forEach(change => {
+                const d = change.doc.data();
+                const id = change.doc.id;
+                if (change.type === "added") {
+                    const card = document.createElement('div');
+                    card.className = "post-card";
+                    card.id = `post-${id}`;
+                    renderPost(card, d, id);
+                    feed.appendChild(card);
+                }
+                if (change.type === "modified") {
+                    renderPost(document.getElementById(`post-${id}`), d, id);
+                }
+                if (change.type === "removed") {
+                    document.getElementById(`post-${id}`).remove();
+                }
+            });
+        });
+    }
+
+    function renderPost(el, d, id) {
+        const date = new Date(d.createdAt).toLocaleString();
+        el.innerHTML = `
+            ${d.isPinned ? `<span class="pinned-badge">📌 Pinned Post</span>` : ''}
+            <div style="display:flex; justify-content:space-between;">
+                <b>Admin</b>
+                <small style="color:gray;">${date}</small>
+            </div>
+            <p style="margin-top:10px;">${d.text}</p>
+            ${d.mediaUrl ? `<img src="${d.mediaUrl}" class="post-media">` : ''}
+            <div class="reaction-bar">
+                <span class="react-btn" onclick="react('${id}', 'likes')">👍 ${d.likes || 0}</span>
+                <span class="react-btn" onclick="react('${id}', 'hahas')">😆 ${d.hahas || 0}</span>
+                <span class="react-btn" onclick="toggleComments('${id}')">💬 Comment</span>
+                ${isAdmin ? `<span onclick="deletePost('${id}')" style="color:red; margin-left:auto;">Delete</span>` : ''}
+                ${isAdmin ? `<span onclick="pinPost('${id}', ${d.isPinned})">📌</span>` : ''}
+            </div>
+            <div id="comments-${id}" class="comment-section">
+                <div id="comment-list-${id}"></div>
+                <input type="text" placeholder="Comment something..." onkeydown="postComment(event, '${id}')" style="width:100%; padding:8px; border-radius:10px; border:1px solid #ddd; mt:10px;">
+            </div>
+        `;
+    }
+
+    // Reaction (Screen မလှုပ်အောင် အဓိကအပိုင်း)
+    async function react(id, type) {
+        const ref = db.collection("page_posts").doc(id);
+        await db.runTransaction(async transaction => {
+            const doc = await transaction.get(ref);
+            const newVal = (doc.data()[type] || 0) + 1;
+            transaction.update(ref, { [type]: newVal });
+        });
+    }
+
+    async function deletePost(id) { if(confirm("ဖျက်မှာသေချာလား Senior?")) await db.collection("page_posts").doc(id).delete(); }
+    async function pinPost(id, current) { await db.collection("page_posts").doc(id).update({ isPinned: !current }); location.reload(); }
+
+    function toggleComments(id) {
+        const sec = document.getElementById(`comments-${id}`);
+        sec.style.display = sec.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function loadMembers() {
+        db.collection("page_members").onSnapshot(snap => {
+            document.getElementById('memberCount').innerText = `${snap.size} Members`;
+        });
+    }
+</script>
+</body>
+</html>
