@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Page - Community</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+    <style>
+        :root { --purple: #800080; --bg: #f0f2f5; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); padding-bottom: 80px; }
+
+        /* Header UI */
+        .header-container { background: white; position: relative; padding-bottom: 10px; border-radius: 0 0 15px 15px; }
+        .cover-photo { width: 100%; height: 180px; object-fit: cover; background: #ccc; position: relative; }
+        .profile-section { position: relative; padding: 0 15px; margin-top: -50px; display: flex; align-items: flex-end; gap: 15px; }
+        .admin-img { width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; background: #eee; object-fit: cover; }
+        .page-meta { padding-bottom: 5px; }
+        .page-name { font-size: 22px; font-weight: bold; color: #1c1e21; }
+        
+        /* Edit Buttons for Admin */
+        .edit-overlay { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; }
+
+        /* General Card UI */
+        .card { background: white; margin: 12px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .members-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
+        .member-item { min-width: 65px; text-align: center; }
+        .member-img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--purple); padding: 2px; }
+
+        /* Post UI */
+        .post-card { background: white; margin: 12px; padding: 15px; border-radius: 12px; }
+        .post-media { width: 100%; border-radius: 10px; margin-top: 10px; }
+        .btn-post { background: var(--purple); color: white; border: none; padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        .btn-join { background: var(--purple); color: white; border: none; padding: 8px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 65px; background: white; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #eee; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #666; font-size: 11px; }
+        .admin-only { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <div class="cover-photo">
+            <img id="coverDisplay" src="https://via.placeholder.com/800x200" style="width:100%; height:100%; object-fit:cover;">
+            <label class="edit-overlay admin-only">📸 Edit Cover <input type="file" hidden onchange="updateBranding('cover', this)"></label>
+        </div>
+        <div class="profile-section">
+            <div style="position:relative;">
+                <img id="profileDisplay" class="admin-img" src="https://via.placeholder.com/150">
+                <label class="edit-overlay admin-only" style="right:0; bottom:0; padding:4px;">📷<input type="file" hidden onchange="updateBranding('profile', this)"></label>
+            </div>
+            <div class="page-meta">
+                <div class="page-name" id="pageTitle">Emotion Community</div>
+                <div style="font-size: 13px; color: #65676b;" id="followerStats">0 Members</div>
+            </div>
+            <div id="actionButtons" style="margin-left: auto;"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <b style="color: var(--purple); font-size: 15px;">Page Members</b>
+        <div class="members-scroll" id="membersList"></div>
+    </div>
+
+    <div id="adminPostBox" class="card admin-only">
+        <textarea id="postContent" placeholder="ဘာတွေဝေမျှချင်လဲ Senior..." style="width:100%; border:none; outline:none; font-size:16px; resize:none; height:80px;"></textarea>
+        <div id="mediaPreview" style="display:none; margin-top:10px;"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #eee; pt:10px;">
+            <label style="cursor:pointer; font-size:14px; color:var(--purple); font-weight:bold;">🖼️ Media <input type="file" id="mediaInput" hidden onchange="previewFile(this)"></label>
+            <button id="btnPost" class="btn-post" onclick="handleUpload()">Post</button>
+        </div>
+    </div>
+
+    <div id="pageFeed"></div>
+
+    <nav class="bottom-nav">
+        <a href="group.html" class="nav-item">👯<br>Group</a>
+        <a href="user.html" class="nav-item">🏠<br>Home</a>     
+        <a href="profile.html" class="nav-item">👤<br>Profile</a>
+        <a href="live.html" class="nav-item">📽️<br>Live</a>
+    </nav>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    const IMGBB_KEY = "C8d8d00185e973ebcafddd34f77a1176";
+
+    let currentUserId = "";
+
+    auth.onAuthStateChanged(async user => {
+        if (user) {
+            currentUserId = user.uid;
+            
+            // ၁။ User Data စစ်မယ်
+            const userRef = db.collection("users").doc(user.uid);
+            const doc = await userRef.get();
+            const userData = doc.data();
+
+            // ၂။ Page ရဲ့ Branding (Cover/Photo) ကို Load လုပ်မယ်
+            loadPageBranding();
+
+            // ၃။ Admin ဟုတ်မဟုတ် စစ်မယ်
+            if (userData && userData.isPremium) {
+                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            }
+
+            // ၄။ Join ထားခြင်း ရှိမရှိ စစ်မယ်
+            checkJoinStatus();
+            
+            loadMembers();
+            loadPosts();
+        } else {
+            window.location.href = "login.html"; 
+        }
+    });
+
+    // --- Page branding (ဖန်တီးခြင်း/ပြင်ဆင်ခြင်း) အပိုင်း ---
+    async function loadPageBranding() {
+        const pageDoc = await db.collection("page_info").doc("main_page").get();
+        if(pageDoc.exists) {
+            const data = pageDoc.data();
+            document.getElementById('coverDisplay').src = data.cover || 'https://via.placeholder.com/800x200';
+            document.getElementById('profileDisplay').src = data.profile || 'https://via.placeholder.com/150';
+        }
+    }
+
+    async function updateBranding(type, input) {
+        const file = input.files[0];
+        if(!file) return;
+
+        // ImageBB ကို တင်မယ်
+        const fd = new FormData(); fd.append('image', file);
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd });
+        const resData = await res.json();
+        const url = resData.data.url;
+
+        // Firestore မှာ Save မယ်
+        await db.collection("page_info").doc("main_page").set({ [type]: url }, { merge: true });
+        location.reload();
+    }
+
+    // --- Join စနစ် အပိုင်း ---
+    async function checkJoinStatus() {
+        const memberDoc = await db.collection("page_members").doc(currentUserId).get();
+        const actionArea = document.getElementById('actionButtons');
+
+        if (memberDoc.exists) {
+            actionArea.innerHTML = `<button disabled style="padding:8px; border-radius:8px; background:#e4e6eb; color:#050505; border:none; font-weight:bold;">Joined ✅</button>`;
+        } else {
+            actionArea.innerHTML = `<button class="btn-join" onclick="joinPage()">Join Page</button>`;
+        }
+    }
+
+    async function joinPage() {
+        try {
+            const user = auth.currentUser;
+            await db.collection("page_members").doc(currentUserId).set({
+                uid: currentUserId,
+                name: user.displayName || "Anonymous",
+                photo: user.photoURL || "",
+                joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            alert("Page ထဲသို့ ဝင်ရောက်ပြီးပါပြီ Senior!");
+            location.reload();
+        } catch (e) { alert(e.message); }
+    }
+
+    // --- Members အရေအတွက်ပြဖို့ ---
+    function loadMembers() {
+        db.collection("page_members").onSnapshot(snap => {
+            document.getElementById('followerStats').innerText = `${snap.size} Members`;
+            const list = document.getElementById('membersList');
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const m = doc.data();
+                list.innerHTML += `
+                    <div class="member-item">
+                        <img class="member-img" src="${m.photo || 'https://via.placeholder.com/50'}">
+                        <div style="font-size:10px; color:#666; overflow:hidden; white-space:nowrap;">${m.name.split(' ')[0]}</div>
+                    </div>`;
+            });
+        });
+    }
+
+    // --- Post တင်တဲ့အပိုင်း ---
+    function previewFile(input) {
+        const box = document.getElementById('mediaPreview');
+        if (input.files[0]) {
+            box.style.display = "block";
+            box.innerHTML = `<img src="${URL.createObjectURL(input.files[0])}" style="width:100%; border-radius:10px; max-height:200px; object-fit:cover;">`;
+        }
+    }
+
+    async function handleUpload() {
+        const text = document.getElementById('postContent').value.trim();
+        const file = document.getElementById('mediaInput').files[0];
+        const btn = document.getElementById('btnPost');
+
+        if(!text && !file) return;
+        btn.disabled = true; btn.innerText = "Posting...";
+
+        let url = "";
+        if(file) {
+            const fd = new FormData(); fd.append('image', file);
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd });
+            const data = await res.json();
+            url = data.data.url;
+        }
+
+        await db.collection("page_posts").add({
+            text, mediaUrl: url, author: "Admin", createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        document.getElementById('postContent').value = "";
+        document.getElementById('mediaPreview').style.display = "none";
+        btn.disabled = false; btn.innerText = "Post";
+    }
+
+    function loadPosts() {
+        db.collection("page_posts").orderBy("createdAt", "desc").onSnapshot(snap => {
+            const feed = document.getElementById('pageFeed');
+            feed.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                feed.innerHTML += `
+                    <div class="post-card">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                            <img src="${document.getElementById('profileDisplay').src}" style="width:40px; height:40px; border-radius:50%;">
+                            <b>${d.author}</b>
+                        </div>
+                        <p style="font-size:15px; line-height:1.5;">${d.text}</p>
+                        ${d.mediaUrl ? `<img src="${d.mediaUrl}" class="post-media">` : ""}
+                    </div>`;
+            });
+        });
+    }
+</script>
+</body>
+</html>
