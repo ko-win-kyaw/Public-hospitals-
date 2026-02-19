@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Developer Panel | EmotioN</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        :root { --purple: #800080; --bg: #f0f2f5; --card: #ffffff; --danger: #ff4757; --success: #2ed573; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+        .admin-container { max-width: 900px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, var(--purple), #4b0082); color: white; padding: 25px; border-radius: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+        .manager-card { background: var(--card); padding: 25px; border-radius: 18px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); }
+        h4 { margin: 0 0 15px 0; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+        .input-group { display: flex; gap: 12px; margin-top: 10px; }
+        input { flex: 1; padding: 14px; border: 2px solid #edf2f7; border-radius: 12px; outline: none; }
+        .btn { padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: 700; border: none; transition: 0.3s; font-size: 14px; }
+        .btn-vip { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; margin-bottom: 10px; background: #fff; border: 1px solid #f0f0f0; }
+        .user-info b { color: var(--purple); font-size: 15px; }
+        .user-info small { color: #718096; display: block; }
+        .feedback-card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 15px; border-left: 5px solid var(--purple); }
+        #userListArea { max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+<div class="admin-container" id="adminContent" style="display: none;">
+    <div class="header">
+        <div>
+            <h2 style="margin:0;">Dev Panel ⚙️</h2>
+            <small id="welcomeName">Welcome back, Senior</small>
+        </div>
+        <button class="btn" style="background:white; color:var(--purple);" onclick="location.reload()">Refresh Data</button>
+    </div>
+
+    <div class="manager-card" style="border-top: 5px solid gold;">
+        <h4>🔔 Pending Page Requests</h4>
+        <div id="requestListArea"><p style="text-align:center; color:#999;">Loading requests...</p></div>
+    </div>
+
+    <div class="manager-card">
+        <h4>🚀 Friends Limit Manager</h4>
+        <div class="input-group">
+            <input type="text" id="targetUid" placeholder="Paste User UID here...">
+            <button class="btn btn-vip" onclick="makeVIP()">Upgrade to 10k</button>
+        </div>
+    </div>
+
+    <div class="manager-card">
+        <h4>👥 Registered Users & Device IDs</h4>
+        <div id="userListArea"></div>
+    </div>
+
+    <div class="manager-card" style="border-top: 5px solid var(--danger);">
+        <h4 style="color: var(--danger);">🚫 Danger Zone: Ban System</h4>
+        <div class="input-group">
+            <input type="text" id="banTarget" placeholder="Device ID က ဒီမှာပေါ်လာမယ်">
+            <button class="btn btn-danger" onclick="banUser()">Permanently Ban</button>
+        </div>
+    </div>
+
+    <h4>📝 Recent Feedbacks</h4>
+    <div id="feedbackList"></div>
+</div>
+
+<div id="denied" style="display:none; text-align:center; margin-top:100px;">
+    <h1 style="color:var(--danger);">Access Denied! ❌</h1>
+    <p>Developer Gmail ဖြင့် ဝင်ရောက်ပေးပါ။</p>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    const seniorEmail = "uwinkyawdevelopbusinessco@gmail.com";
+
+    // ၁။ Single Auth Check (ကုဒ်တွေ ပေါင်းလိုက်ပါပြီ)
+    auth.onAuthStateChanged(user => {
+        if (user && user.email === seniorEmail) {
+            document.getElementById('adminContent').style.display = 'block';
+            document.getElementById('welcomeName').innerText = `Senior: ${user.displayName || 'uwinkyaw'}`;
+            loadRequests();
+            loadUserList();
+            loadFeedbacks();
+        } else {
+            document.getElementById('denied').style.display = 'block';
+        }
+    });
+
+    // ၂။ Load Pending Requests
+    function loadRequests() {
+        db.collection("admin_requests").where("status", "==", "pending").onSnapshot(snap => {
+            const area = document.getElementById('requestListArea');
+            area.innerHTML = snap.empty ? "<p style='text-align:center; color:#999;'>တောင်းဆိုမှုများ မရှိသေးပါ</p>" : "";
+            snap.forEach(doc => {
+                const r = doc.data();
+                const rid = doc.id;
+                const div = document.createElement('div');
+                div.className = "user-item";
+                div.innerHTML = `
+                    <div class="user-info"><b>📄 ${r.requestedPageName}</b><small>${r.email}</small></div>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn btn-vip" onclick="approvePremium('${r.uid}', '${rid}')">Approve</button>
+                        <button class="btn btn-danger" onclick="rejectRequest('${rid}')">Reject</button>
+                    </div>`;
+                area.appendChild(div);
+            });
+        });
+    }
+
+    // ၃။ Approve Logic (User table ကို update လုပ်တာ တစ်ကြောင်းတည်း ပေါင်းလိုက်ပါတယ်)
+    async function approvePremium(userUid, requestId) {
+        if(!confirm("Approve ပေးမှာ သေချာလား Senior?")) return;
+        try {
+            await db.collection("users").doc(userUid).update({ isPremium: true, adminOfPage: true });
+            await db.collection("admin_requests").doc(requestId).delete();
+            await db.collection("notifications").add({ receiverId: userUid, message: "သင့်အား Page Admin အဖြစ် ခွင့်ပြုလိုက်ပါပြီ။", createdAt: Date.now() });
+            alert("Approved!");
+        } catch (e) { alert(e.message); }
+    }
+
+    async function rejectRequest(id) { if(confirm("Reject လုပ်မှာလား?")) await db.collection("admin_requests").doc(id).delete(); }
+
+    // ၄။ Registered User List
+    function loadUserList() {
+        db.collection("users").orderBy("lastActive", "desc").limit(15).onSnapshot(snap => {
+            const area = document.getElementById('userListArea');
+            area.innerHTML = "";
+            snap.forEach(doc => {
+                const u = doc.data();
+                const div = document.createElement('div');
+                div.className = "user-item";
+                div.onclick = () => { document.getElementById('banTarget').value = u.lastDeviceId || ''; alert("Device ID Copied!"); };
+                div.innerHTML = `<div class="user-info"><b>👤 ${u.name}</b><small>${u.email}</small></div><span class="id-badge">${u.lastDeviceId || 'N/A'}</span>`;
+                area.appendChild(div);
+            });
+        });
+    }
+
+    // ၅။ Ban System
+    async function banUser() {
+        const target = document.getElementById('banTarget').value;
+        if(!target || !confirm("Ban မှာ သေချာလား?")) return;
+        await db.collection("banned_devices").doc(target).set({ deviceId: target, bannedAt: Date.now(), adminBy: seniorEmail });
+        alert("Banned!");
+    }
+
+    // ၆။ VIP Logic
+    async function makeVIP() {
+        const uid = document.getElementById('targetUid').value;
+        if(!uid) return;
+        await db.collection("users").doc(uid).update({ friendLimit: 10000, isVIP: true });
+        alert("Upgraded!");
+    }
+
+    // ၇။ Feedbacks
+    function loadFeedbacks() {
+        db.collection("feedbacks").orderBy("createdAt", "desc").limit(10).onSnapshot(snap => {
+            const list = document.getElementById('feedbackList');
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const div = document.createElement('div');
+                div.className = "feedback-card";
+                div.innerHTML = `<b>${d.userName}</b><div class="msg-text">${d.feedbackMsg || d.text}</div>`;
+                list.appendChild(div);
+            });
+        });
+    }
+</script>
+</body>
+</html>
+
