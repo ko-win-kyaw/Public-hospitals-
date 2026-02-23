@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Page - Senior Final Edition</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <style>
+        :root { --p: #800080; --bg: #f0f2f5; }
+        body { background: var(--bg); margin: 0; font-family: sans-serif; padding-bottom: 70px; }
+        .header-box { background: white; border-radius: 0 0 20px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding-bottom: 12px; }
+        .cover-area { width: 100%; height: 180px; background: #ddd; position: relative; }
+        .cover-img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-area { padding: 15px; margin-top: -50px; display: flex; align-items: flex-end; gap: 12px; }
+        .p-img { width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; object-fit: cover; background: #eee; }
+        .card { background: white; margin: 12px; padding: 15px; border-radius: 12px; position: relative; }
+        .post-media { width: 100%; border-radius: 8px; margin-top: 10px; background: #000; }
+        .admin-only { display: none; }
+        .interaction { display: flex; justify-content: space-around; border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; font-size: 13px; font-weight: bold; }
+        .btn-main { background: var(--p); color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; }
+        
+        .search-container { margin: 10px 15px; position: relative; }
+        .search-box { display: flex; background: #f0f2f5; border-radius: 20px; padding: 8px 15px; border: 1px solid #ddd; align-items: center; }
+        .search-box input { border: none; outline: none; flex: 1; background: transparent; padding-left: 5px; }
+        #searchResults { position: absolute; width: 100%; background: white; z-index: 100; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); top: 45px; display: none; }
+        .search-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+
+        .comment-box { margin-top: 10px; border-top: 1px solid #eee; display: none; }
+        .c-item { background: #f0f2f5; padding: 10px; border-radius: 12px; margin-top: 8px; font-size: 13px; }
+        .time-label { font-size: 10px; color: #999; margin-left: 5px; }
+                                .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 60px; background: white; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #eee; z-index: 2000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #666; font-size: 10px; }
+        .nav-item img { width: 22px; height: 22px; margin-bottom: 4px; }
+        .nav-item.active { color: var(--purple); font-weight: bold; }
+.post-media { 
+    width: 100%; 
+    height: 200px; /* fixed height ထားမှ grid ညီမှာပါ */
+    object-fit: cover; 
+    border-radius: 8px; 
+}
+/* Image Modal Style */
+#imgModal { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; }
+#imgModal img { max-width: 95%; max-height: 90%; border-radius: 8px; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+.modal-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header-box">
+        <div class="cover-area">
+            <img id="coverDisplay" class="cover-img" src="">
+            <label class="admin-only" style="position:absolute; bottom:10px; right:10px; background:rgba(0,0,0,0.5); padding:8px; border-radius:50%; color:white; cursor:pointer;">📸<input type="file" hidden onchange="uploadBranding('cover', this)"></label>
+        </div>
+        <div class="profile-area">
+            <div style="position:relative;">
+                <img id="profileDisplay" class="p-img" src="">
+                <label class="admin-only" style="position:absolute; bottom:5px; right:0; background:rgba(0,0,0,0.5); padding:5px; border-radius:50%; color:white; cursor:pointer;">📷<input type="file" hidden onchange="uploadBranding('profile', this)"></label>
+            </div>
+            <div>
+                <h2 id="pageNameHeader" style="font-size: 17px; margin:0;" onclick="editPageName()">Emotion Community</h2>
+
+                
+                <p id="memberCount" style="font-size: 11px; color: gray;">0 Members</p>
+            </div>
+            <div id="statusArea" style="margin-left: auto;"></div>
+        </div>
+<div class="search-container" style="position: relative;">
+    <div class="search-box">
+        <span>🔍</span>
+        <input type="text" id="pageSearch" placeholder="Search page name..." onkeyup="searchPage()" autocomplete="off">
+    </div>
+    <div id="searchResults" style="position: absolute; width: 100%; background: white; z-index: 1000; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; max-height: 250px; overflow-y: auto; top: 45px;"></div>
+</div>
+    <div id="postBox" class="card admin-only">
+        <textarea id="postText" rows="3" placeholder="ဘာတွေဝေမျှချင်လဲ Senior..." style="width:100%; border:none; outline:none; font-size:15px; resize:none;"></textarea>
+        <div id="mediaPreview" style="margin-top:10px; display:none; position:relative;"></div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px; align-items:center;">
+            <label style="cursor:pointer; color:var(--p); font-size:13px; font-weight:bold;">🖼️ Media<input type="file" id="mediaInput" hidden multiple onchange="previewMedia(this)">
+ </label>
+            <button class="btn-main" id="btnPost" onclick="handlePost()">Post</button>
+        </div>
+    </div>
+<div id="imgModal">
+    <span class="modal-close" onclick="this.parentElement.style.display='none'">×</span>
+    <img id="modalImg" src="">
+</div>
+
+    <div id="feed"></div>
+    <nav class="bottom-nav">
+        <a href="user.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/1946/1946488.png"><span data-lang="nav_user">User</span>
+        </a>
+
+        <a href="chat.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/589/589708.png"><span data-lang="nav_chat">Chat</span>
+        </a>
+        <a href="live.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/4404/4404094.png"><span data-lang="nav_live">Live</span>
+        </a>
+        <a href="profile.html" class="nav-item active">
+            <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png"><span data-lang="nav_profile">Profile</span>
+        </a>
+    </nav>
+
+<script>
+    // --- Firebase & Keys ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    const IMGBB_KEY = "C8d8d00185e973ebcafddd34f77a1176";
+    const BUNNY_KEY = "a038d7e1-bf94-448b-b863c156422e-7e4a-4299";
+    const BUNNY_STORAGE = "public-hospitals";
+    const ADMIN_EMAIL = "uwinkyawdevelopbusinessco@gmail.com";
+
+       // --- Auth Listener (Updated) ---
+
+auth.onAuthStateChanged(async user => {
+    if (user) {
+        // ၁။ URL က id ကို ယူမယ်
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewId = urlParams.get('id');
+
+
+        const targetUID = viewId ? viewId : user.uid;
+
+        // ၃။ Block စစ်မယ်
+        const blockCheck = await db.collection("blocked_users").doc(user.uid).get();
+        if (blockCheck.exists) { 
+            alert("Your account is blocked!"); 
+            auth.signOut(); 
+            return; 
+        }
+
+        // ၄။ အရေးကြီးဆုံးအပိုင်း - Function တွေကို targetUID ထည့်ပြီး ခေါ်မယ်
+        loadBranding(targetUID); 
+        loadPosts(targetUID); 
+        loadMembers(targetUID); 
+        
+        if(typeof listenNoti === "function") listenNoti();
+
+    
+        const postBox = document.getElementById('postBoxArea') || document.querySelector('.card:has(#postText)');
+        if (user.uid === targetUID || user.email === ADMIN_EMAIL) {
+            if(postBox) postBox.style.display = 'block';
+        } else {
+            if(postBox) postBox.style.display = 'none';
+        }
+
+    } else { 
+        window.location.href = "user.html"; 
+    }
+});
+
+
+    function showAdmin() { document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block'); }
+    function formatTime(ts) { if(!ts) return ""; return new Date(ts).toLocaleString(); }
+// --- View System (Optimized for Senior) ---
+const viewObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        // Post တစ်ခုကို ၅၀% ကျော် မြင်ရပြီဆိုတာနဲ့ view တက်မယ်
+        if (entry.isIntersecting) {
+            const postId = entry.target.dataset.id;
+            if (postId) {
+                db.collection("page_posts").doc(postId).update({ 
+                    views: firebase.firestore.FieldValue.increment(1) 
+                }).catch(err => console.error("View update error:", err));
+                
+                // တစ်ခါတက်ပြီးရင် ထပ်မတက်အောင် ရပ်လိုက်မယ်
+                viewObserver.unobserve(entry.target);
+            }
+        }
+    });
+}, { 
+    threshold: 0.5 
+});
+function loadPosts(pageOwnerId = null) {
+    const feed = document.getElementById('feed');
+    if (!feed) return;
+    const currentUid = auth.currentUser.uid;
+    feed.innerHTML = ""; 
+
+    let query = db.collection("page_posts");
+
+    // pageOwnerId ရှိရင် အဲ့ဒီလူရဲ့ Post ပဲပြမယ်
+    if (pageOwnerId) {
+        query = query.where("uid", "==", pageOwnerId);
+    }
+
+    // Pin logic နှင့် အချိန်အလိုက် စီခြင်း (Index ဆောက်ထားရန် လိုအပ်ပါသည်)
+    query.orderBy("isPinned", "desc").orderBy("createdAt", "desc")
+    .onSnapshot(snap => {
+        if (snap.metadata.hasPendingWrites) return;
+
+        snap.docChanges().forEach(change => {
+            const d = change.doc.data(); 
+            const id = change.doc.id;
+            const isOwnerOrDev = (d.uid === currentUid) || (auth.currentUser.email === ADMIN_EMAIL);
+
+            if (change.type === "added") {
+                const div = document.createElement('div'); 
+                div.className = "card"; 
+                div.id = `post-${id}`; 
+                div.dataset.id = id;
+                
+                let mediaHTML = "";
+                if (d.mediaUrls && d.mediaUrls.length > 0) {
+                    if (d.mediaType === 'video') {
+                        mediaHTML = `<video src="${d.mediaUrls[0]}" controls class="post-media" style="width:100%; max-height:400px; border-radius:8px;"></video>`;
+                    } else {
+                        mediaHTML = `<div style="display:grid; grid-template-columns: repeat(${d.mediaUrls.length > 1 ? 2 : 1}, 1fr); gap:5px; margin-top:10px;">`;
+                        d.mediaUrls.forEach(url => {
+                            mediaHTML += `<img src="${url}" class="post-media" style="width:100%; height:150px; object-fit:cover; border-radius:8px; cursor:pointer;" onclick="openFullImg('${url}')">`;
+                        });
+                        mediaHTML += `</div>`;
+                    }
+                }
+
+                // --- Senior ရဲ့ Logic တွေ အားလုံးကို စနစ်တကျ ပြန်ပေါင်းစပ်ထားတဲ့ အပိုင်း ---
+                div.innerHTML = `
+                    <div style="font-size:12px; color:gray; margin-bottom:8px;">
+                        ${(d.isPinned === 1 || d.isPinned === true) ? '<span style="color:red; font-weight:bold;">📌 Pinned Post</span><br>' : ''}
+                        <b>${d.author || 'Admin'}</b> • <span id="v-${id}">${d.views || 0}</span> views <br>
+                        <span class="time-label">${formatTime(d.createdAt)}</span>
+                    </div>
+
+                    <p style="white-space:pre-wrap;">${d.text}</p>
+                    ${mediaHTML}
+                    
+                    <div class="interaction" id="int-${id}">
+                        <span onclick="handleReact('${id}', 'likes')" style="cursor:pointer; color:${(d.likedBy || []).includes(currentUid) ? 'purple' : 'gray'}">👍 <span id="l-${id}">${d.likes || 0}</span></span>
+                        <span onclick="handleReact('${id}', 'hahas')" style="cursor:pointer; color:${(d.hahaedBy || []).includes(currentUid) ? 'orange' : 'gray'}">😆 <span id="h-${id}">${d.hahas || 0}</span></span>
+                        <span onclick="toggleC('${id}')" style="cursor:pointer;">💬 <span id="cc-${id}">${(d.comments || []).length || 0}</span></span>
+                        <span onclick="sharePost('${id}')" style="cursor:pointer; color:purple;">🚀 Share</span>
+                        
+                        ${isOwnerOrDev ? `
+                            <span onclick="deleteAnythingWithCleanup('${id}')" style="color:red; cursor:pointer;">🗑️</span> 
+                            <span onclick="togglePin('${id}', ${d.isPinned})" style="color:${(d.isPinned === 1 || d.isPinned === true) ? 'red' : 'gray'}; cursor:pointer;">📌</span>
+                        ` : ''}
+                    </div>
+
+                    <div class="comment-box" id="cb-${id}">
+                        <div id="cl-${id}"></div>
+                        <div style="display:flex; margin-top:10px; gap:5px;">
+                            <input type="text" id="cInput-${id}" placeholder="Comment..." style="flex:1; border-radius:15px; border:1px solid #ddd; padding:5px 10px; outline:none;">
+                            <button onclick="addComment('${id}')" style="border:none; background:purple; color:white; border-radius:15px; padding:5px 12px;">Send</button>
+                        </div>
+                    </div>`;
+                
+                feed.appendChild(div);
+                if (window.viewObserver) viewObserver.observe(div);
+                loadComments(id);
+            }
+
+            if (change.type === "modified") {
+                const postEl = document.getElementById(`post-${id}`);
+                if (postEl && change.doc.metadata.hasPendingWrites === false) {
+                    const lEl = document.getElementById(`l-${id}`);
+                    const hEl = document.getElementById(`h-${id}`);
+                    const vEl = document.getElementById(`v-${id}`);
+                    if (lEl) lEl.innerText = d.likes || 0;
+                    if (hEl) hEl.innerText = d.hahas || 0;
+                    if (vEl) vEl.innerText = d.views || 0;
+                }
+            }
+        });
+    }, err => {
+        console.error("Query Error (Index required): ", err);
+        alert("Database Index ဆောက်ရန် လိုအပ်နေပါသည်။ Browser Console ကို စစ်ဆေးပါ။");
+    });
+}
+
+async function handlePost() {
+    const text = document.getElementById('postText').value.trim();
+    const files = Array.from(document.getElementById('mediaInput').files);
+    const btn = document.getElementById('btnPost');
+    
+    if(!text && files.length === 0) return;
+
+    btn.disabled = true; 
+    btn.innerText = "Uploading Media...";
+
+    try {
+        const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
+        const authorName = userDoc.data()?.requestedPageName || auth.currentUser.displayName || "Admin";
+
+        // Senior လိုချင်တဲ့ Parallel Upload Logic (Promise.all)
+        const uploadPromises = files.map(async (file) => {
+            if (file.type.startsWith('video/')) {
+                const fName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+                const res = await fetch(`https://sg.storage.bunnycdn.com/${BUNNY_STORAGE}/${fName}`, {
+                    method: 'PUT',
+                    headers: { 'AccessKey': BUNNY_KEY },
+                    body: file
+                });
+                if (res.ok) return `https://${BUNNY_STORAGE}.b-cdn.net/${fName}`;
+            } else {
+                const fd = new FormData();
+                fd.append('image', file);
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
+                    method: 'POST',
+                    body: fd
+                });
+                const data = await res.json();
+                if (data.success) return data.data.url;
+            }
+            return null;
+        });
+
+        // ပုံအားလုံး တစ်ပြိုင်နက်တက်သွားအောင် စောင့်မယ်
+        const mediaUrls = (await Promise.all(uploadPromises)).filter(Boolean);
+        
+        // Video ပါသလား စစ်မယ် (mediaType သတ်မှတ်ရန်)
+        const hasVideo = files.some(f => f.type.startsWith('video/'));
+
+        await db.collection("page_posts").add({ 
+            uid: auth.currentUser.uid, 
+            author: authorName,
+            text: text, 
+            mediaUrls: mediaUrls, // Array အနေနဲ့ သိမ်းမယ်
+            mediaType: hasVideo ? 'video' : 'image', 
+            likes: 0, 
+            likedBy: [], 
+            hahas: 0, 
+            hahaedBy: [], 
+            comments: [], 
+            views: 0, 
+            isPinned: 0, 
+            createdAt: Date.now() 
+        });
+
+        document.getElementById('postText').value = ""; 
+        cancelMedia();
+        alert("Post အောင်မြင်စွာ တင်ပြီးပါပြီ Senior!");
+
+    } catch (error) {
+        console.error("Post Error:", error);
+        alert("Upload လုပ်ရာမှာ အမှားအယွင်း ရှိသွားပါတယ်");
+    } finally {
+        btn.disabled = false; 
+        btn.innerText = "Post";
+    }
+}
+
+
+// Preview ပြတဲ့နေရာမှာ ပုံအများကြီးပြဖို့ ပြင်ထားပါတယ်
+function previewMedia(i) {
+    const files = Array.from(i.files);
+    const b = document.getElementById('mediaPreview'); 
+    if(files.length === 0) return;
+    if(files.length > 10) { alert("ပုံ ၁၀ ပုံထက် ပိုတင်လို့မရပါ"); i.value=""; return; }
+    
+    b.style.display = "block";
+    b.innerHTML = `<div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:5px;"></div>`;
+    const grid = b.querySelector('div');
+
+    files.forEach(f => {
+        const url = URL.createObjectURL(f);
+        grid.innerHTML += f.type.startsWith('video') 
+            ? `<video src="${url}" style="width:100%; height:80px; object-fit:cover; border-radius:5px;"></video>` 
+            : `<img src="${url}" style="width:100%; height:80px; object-fit:cover; border-radius:5px;">`;
+    });
+    
+    b.innerHTML += `<div onclick="cancelMedia()" style="position:absolute; top:-10px; right:-10px; background:red; color:white; border-radius:50%; width:25px; height:25px; text-align:center; line-height:23px; cursor:pointer;">×</div>`;
+}
+
+    function cancelMedia() { 
+        document.getElementById('mediaInput').value = ""; 
+        document.getElementById('mediaPreview').innerHTML = "";
+        document.getElementById('mediaPreview').style.display = 'none'; 
+    }
+    async function handleReact(postId, type) {
+    try {
+        const uid = auth.currentUser.uid;
+        const isLike = (type === 'likes');
+        
+        // ၁။ UI အတွက် Element တွေကို အရင်ယူမယ်
+        const countPrefix = isLike ? 'l-' : 'h-';
+        const countEl = document.getElementById(`${countPrefix}${postId}`);
+        const iconEl = document.getElementById(`int-${postId}`).querySelector(`span[onclick*="${type}"]`);
+        
+        if (!countEl || !iconEl) return; // Element မရှိရင် ဘာမှမလုပ်ဘူး
+
+        // ၂။ Optimistic UI Update - Database ကို မစောင့်ဘဲ ချက်ချင်းပြမယ်
+        let currentCount = parseInt(countEl.innerText) || 0;
+        // အရောင်ကိုကြည့်ပြီး React လုပ်ပြီးသားလား စစ်မယ် (Optimistic Check)
+        const isAlreadyReacted = (iconEl.style.color === 'purple' || iconEl.style.color === 'orange');
+
+        if (isAlreadyReacted) {
+            countEl.innerText = Math.max(0, currentCount - 1);
+            iconEl.style.color = 'gray';
+        } else {
+            countEl.innerText = currentCount + 1;
+            iconEl.style.color = isLike ? 'purple' : 'orange';
+        }
+
+        // ၃။ Database Logic (နဂို Logic အတိုင်း အနောက်မှာ အလုပ်လုပ်မယ်)
+        const ref = db.collection("page_posts").doc(postId);
+        const field = isLike ? 'likedBy' : 'hahaedBy';
+        const dbCountField = isLike ? 'likes' : 'hahas';
+
+        // 💡 ဒီနေရာမှာ await မခံတော့ဘူး၊ နောက်ကွယ်ကနေ Update လှမ်းလုပ်မယ်
+        ref.get().then(snap => {
+            if (!snap.exists) return;
+            const d = snap.data();
+            const hasReactedInDB = (d[field] || []).includes(uid);
+
+            if (hasReactedInDB) {
+                // DB မှာ ရှိနေရင် ပြန်ဖြုတ်မယ်
+                return ref.update({ 
+                    [field]: firebase.firestore.FieldValue.arrayRemove(uid), 
+                    [dbCountField]: firebase.firestore.FieldValue.increment(-1) 
+                });
+            } else {
+                // DB မှာ မရှိသေးရင် အသစ်ထည့်မယ်
+                return ref.update({ 
+                    [field]: firebase.firestore.FieldValue.arrayUnion(uid), 
+                    [dbCountField]: firebase.firestore.FieldValue.increment(1) 
+                }).then(() => {
+                    sendNoti(`${auth.currentUser.displayName} reacted to your post`);
+                });
+            }
+        }).catch(err => {
+            console.error("Database Update Error:", err);
+            // Error ဖြစ်ခဲ့ရင် UI ကို မူလအတိုင်း ပြန်ပြင်ပေးဖို့ Logic (Optional)
+        });
+
+    } catch (error) {
+        console.error("Reaction Error:", error);
+    }
+}
+
+async function addComment(postId) {
+    const val = document.getElementById(`cInput-${postId}`).value.trim();
+    if (!val) return;
+
+    await db.collection("page_posts").doc(postId).collection("comments").add({
+        uid: auth.currentUser.uid,
+        author: auth.currentUser.displayName || "User",
+        text: val,
+        createdAt: Date.now()
+    });
+
+    document.getElementById(`cInput-${postId}`).value = "";
+}
+function loadComments(postId) {
+    db.collection("page_posts").doc(postId).collection("comments")
+      .orderBy("createdAt", "asc")
+      .onSnapshot(snap => {
+        const list = document.getElementById(`cl-${postId}`);
+        if (!list) return;
+        list.innerHTML = "";
+        
+        const countBox = document.getElementById(`cc-${postId}`);
+        if (countBox) countBox.innerText = snap.size;
+
+        snap.forEach(doc => {
+            const c = doc.data();
+            const cid = doc.id;
+            const uid = auth.currentUser.uid;
+            
+            list.innerHTML += `
+                <div class="c-item">
+                    <b>${c.author}</b>: ${c.text}
+                    <div style="font-size:11px; margin-top:5px; display:flex; gap:12px;">
+                        <span onclick="reactComment('${postId}', '${cid}', 'likes')" 
+                              style="cursor:pointer; color:${(c.likedBy || []).includes(uid) ? 'purple' : 'gray'}">
+                            👍 ${c.likes || 0}
+                        </span>
+                        <span onclick="reactComment('${postId}', '${cid}', 'hahas')" 
+                              style="cursor:pointer; color:${(c.hahaedBy || []).includes(uid) ? 'orange' : 'gray'}">
+                            😆 ${c.hahas || 0}
+                        </span>
+                    </div>
+                </div>`;
+        });
+    });
+}
+
+    async function reactComment(postId, commentId, type) {
+    const ref = db.collection("page_posts")
+        .doc(postId)
+        .collection("comments")
+        .doc(commentId);
+
+    const snap = await ref.get();
+    const d = snap.data();
+    const uid = auth.currentUser.uid;
+
+    const field = type === "likes" ? "likedBy" : "hahaedBy";
+    const countField = type === "likes" ? "likes" : "hahas";
+
+    if ((d[field] || []).includes(uid)) {
+        await ref.update({
+            [field]: firebase.firestore.FieldValue.arrayRemove(uid),
+            [countField]: firebase.firestore.FieldValue.increment(-1)
+        });
+    } else {
+        await ref.update({
+            [field]: firebase.firestore.FieldValue.arrayUnion(uid),
+            [countField]: firebase.firestore.FieldValue.increment(1)
+        });
+    }
+}
+  async function sharePost(id) {
+        const snap = await db.collection("page_posts").doc(id).get();
+        await db.collection("health_posts").add({ ...snap.data(), uid: auth.currentUser.uid, isShared: true, createdAt: Date.now() });
+        alert("Shared to Profile Successfully!");
+    }
+function viewOtherPage(pageOwnerId) {
+    console.log("Navigating to Page ID:", pageOwnerId);
+    
+    // ၁။ Search result box ကို ပိတ်လိုက်မယ် (User Experience ကောင်းအောင်)
+    const resBox = document.getElementById('searchResults');
+    if (resBox) resBox.style.display = "none";
+    
+    // ၂။ Search box ထဲက စာသားကို ရှင်းထုတ်မယ်
+    const searchInput = document.getElementById('pageSearch');
+    if (searchInput) searchInput.value = "";
+
+    window.location.href = "phospital.html?id=" + pageOwnerId;
+}
+
+async function searchPage() {
+    const queryInput = document.getElementById('pageSearch').value.trim();
+    const resBox = document.getElementById('searchResults');
+    
+    // စာမရိုက်ထားရင် result box ကို ပိတ်ထားမယ်
+    if (!queryInput) { 
+        resBox.style.display = "none"; 
+        return; 
+    }
+
+    // စာလုံးအကြီးအသေး ညှိဖို့ (Database ထဲမှာ lowercase နဲ့ သိမ်းထားရင် ပိုကောင်းပါတယ်)
+    const query = queryInput.toLowerCase();
+
+    try {
+        // Firebase Query: requestedPageName က query နဲ့ စတဲ့ data တွေကိုပဲ ဆွဲထုတ်မယ်
+        const snap = await db.collection("users")
+                       .where("requestedPageName", ">=", query)
+                       .where("requestedPageName", "<=", query + "\uf8ff")
+                       .get();
+
+        resBox.innerHTML = ""; 
+        let hasResults = false;
+
+        if (snap.empty) {
+            resBox.style.display = "none";
+            return;
+        }
+
+        snap.forEach(doc => {
+            const data = doc.data();
+            hasResults = true;
+            resBox.style.display = "block";
+            
+            const item = document.createElement('div');
+            item.className = "search-item";
+            item.style = "padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: center; gap: 12px;";
+            
+            const profilePic = data.profile ? 
+                `<img src="${data.profile}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border:1px solid #ddd;">` : 
+                `<div style="width:35px; height:35px; border-radius:50%; background:#eee; display:flex; align-items:center; justify-content:center;">🏥</div>`;
+            
+            item.innerHTML = `
+                ${profilePic}
+                <div style="display:flex; flex-direction:column;">
+                    <b style="font-size:14px; color:#333;">${data.requestedPageName}</b>
+                    <small style="font-size:10px; color:gray;">Admin: ${data.name || 'User'}</small>
+                </div>
+            `;
+            
+            // Item ကို နှိပ်လိုက်ရင် viewOtherPage function ကို ခေါ်မယ်
+            item.onclick = () => {
+                viewOtherPage(doc.id);
+            };
+            
+            resBox.appendChild(item);
+        });
+
+    } catch (error) {
+        console.error("Search error:", error);
+    }
+}
+async function loadBranding(targetUID) {
+    if (!targetUID) return;
+    const isDeveloper = (auth.currentUser && auth.currentUser.email === ADMIN_EMAIL);
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasNoParam = !urlParams.get('id');
+
+    // Developer ဖြစ်ပြီး URL မှာ ID မပါရင် Main Info ဆွဲမယ်
+    if (isDeveloper && hasNoParam) {
+        db.collection("page_info").doc("main").onSnapshot(d => {
+            if(d.exists){
+                const data = d.data();
+                document.getElementById('coverDisplay').src = data.cover || 'https://via.placeholder.com/400x180';
+                document.getElementById('profileDisplay').src = data.profile || 'https://via.placeholder.com/100';
+                document.getElementById('pageNameHeader').innerText = data.pageTitle || "Main Community";
+            }
+        });
+    } else {
+        // သာမန် user သို့မဟုတ် သူများ page ကို လှမ်းကြည့်ချိန်
+        db.collection("users").doc(targetUID).onSnapshot(d => {
+            if(d.exists){
+                const data = d.data();
+                document.getElementById('coverDisplay').src = data.cover || 'https://via.placeholder.com/400x180';
+                document.getElementById('profileDisplay').src = data.profile || 'https://via.placeholder.com/100';
+                document.getElementById('pageNameHeader').innerText = data.requestedPageName || "Community Page";
+            }
+        });
+    }
+}
+  // --- User Role & Admin S
+    async function checkStatus(uid) {
+        try {
+            const uDoc = await db.collection("users").doc(uid).get();
+            const userData = uDoc.data();
+            
+            // Member ဖြစ်မဖြစ် အရင်စစ်မယ်
+            const isJoined = (await db.collection("page_members").doc(uid).get()).exists;
+            const area = document.getElementById('statusArea');
+
+            if (!isJoined) {
+                // မ join ရသေးရင် Join/Create ပြမယ်
+                area.innerHTML = `
+                    <button class="btn-main" onclick="joinPage()">Join</button> 
+                    <button class="btn-main" style="background:#444;" onclick="startPageCreation()">Create</button>`;
+            } else {
+                // Join ပြီးသားသူတွေထဲမှာ Role ခွဲမယ်
+                if (userData?.isPremium === true) {
+                    
+                    area.innerHTML = `<span style="color:var(--p); font-weight:bold; font-size:12px;">👑 Page Admin</span>`;
+                    showAdmin(); 
+                } else if (userData?.isRequestPending === true) {
+                    // Request တင်ထားတုန်းသူ
+                    area.innerHTML = `<small style="color:orange;">⏳ Pending Approval...</small>`;
+                } else {
+                    // ရိုးရိုး Member
+                    area.innerHTML = `<small style="color:green;">✓ Joined</small>`;
+                }
+            }
+        } catch (error) {
+            console.error("Status Check Error:", error);
+        }
+    }
+
+    function showAdmin() {
+        document.querySelectorAll('.admin-only').forEach(e => {
+            e.style.display = 'block';
+        });
+        console.log("Admin UI Unlocked for User");
+    }
+
+
+    async function startPageCreation() {
+        const name = prompt("Page Name:");
+        if (name && name.length > 2) {
+            await db.collection("users").doc(auth.currentUser.uid).set({ isRequestPending: true, requestedPageName: name }, { merge: true });
+            await db.collection("admin_requests").add({ uid: auth.currentUser.uid, email: auth.currentUser.email, requestedPageName: name, status: "pending", time: Date.now() });
+            alert("Requested Successfully!"); location.reload();
+        }
+    }
+async function deleteAnythingWithCleanup(id) {
+    if (!confirm("ဒီ Post ကို ဖျက်မှာ သေချာပါသလား?")) return;
+    
+    try {
+        const ref = db.collection("page_posts").doc(id);
+        const snap = await ref.get();
+        if (!snap.exists) return;
+        const d = snap.data();
+
+        // ၁။ Bunny CDN က Media (Array) ကို အကုန်လိုက်ဖျက်မယ်
+        if (d.mediaUrls && Array.isArray(d.mediaUrls)) {
+            for (let url of d.mediaUrls) {
+                if (url.includes('b-cdn.net')) {
+                    const fileName = url.split('/').pop();
+                    try {
+                        await fetch(`https://sg.storage.bunnycdn.com/${BUNNY_STORAGE}/${fileName}`, { 
+                            method: 'DELETE', 
+                            headers: { 'AccessKey': BUNNY_KEY } 
+                        });
+                    } catch (err) {
+                        console.error("Bunny Delete Error:", err);
+                    }
+                }
+            }
+        }
+        
+        // ၂။ Firestore က Post ကို ဖျက်မယ်
+        await ref.delete();
+        alert("Deleted Successfully!");
+
+        // UI ကနေ ချက်ချင်းဖယ်ထုတ်မယ်
+        const postEl = document.getElementById(`post-${id}`);
+        if (postEl) postEl.remove();
+
+    } catch (e) {
+        console.error("Delete error:", e);
+        alert("ဖျက်လို့မရပါ (Permission Denied)");
+    }
+}
+
+async function togglePin(id, curStatus) {
+    try {
+        // curStatus က string ဖြစ်နေနိုင်လို့ Number ပြောင်းပြီး စစ်ပါမယ်
+        const current = Number(curStatus);
+        const newStatus = (current === 1) ? 0 : 1; 
+        
+        await db.collection("page_posts").doc(id).update({ 
+            isPinned: newStatus // 0 သို့မဟုတ် 1 (Number) အနေနဲ့ သွားမယ်
+        });
+        alert(newStatus === 1 ? "Pinned! 📌" : "Unpinned!");
+    } catch (e) {
+        console.error("Pin error:", e);
+    }
+}
+   async function joinPage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewId = urlParams.get('id');
+    const myUid = auth.currentUser.uid;
+
+    // URL မှာ ID ရှိရင် အဲ့ဒီ Page ကို join မယ်၊ မရှိရင် ကိုယ့် Page ကိုယ် join တာပဲ (သို့မဟုတ် error)
+    const targetUID = viewId ? viewId : myUid;
+
+    try {
+        // collection ထဲမှာ join တဲ့သူ့ ID ရော၊ Page ပိုင်ရှင် ID (ownerId) ရော သိမ်းမယ်
+        await db.collection("page_members").add({ 
+            uid: myUid, 
+            ownerId: targetUID, 
+            joinedAt: Date.now() 
+        });
+        alert("Joined Successfully! ✨");
+    } catch (e) {
+        console.error("Join Error:", e);
+    }
+}
+
+    function toggleC(id) { const b = document.getElementById(`cb-${id}`); b.style.display = b.style.display==='block'?'none':'block'; }
+function loadMembers(targetUID) {
+    if (!targetUID) return;
+
+    // page_members ထဲမှာ ownerId က targetUID နဲ့ တူတဲ့သူတွေကိုပဲ Query လုပ်မယ်
+    db.collection("page_members")
+      .where("ownerId", "==", targetUID)
+      .onSnapshot(s => {
+          const memberCountEl = document.getElementById('memberCount');
+          if (memberCountEl) {
+              memberCountEl.innerText = `${s.size} Members`;
+          }
+      }, err => {
+          console.error("Member count error:", err);
+      });
+}
+
+    async function sendNoti(msg) { await db.collection("notifications").add({ receiverId: ADMIN_EMAIL, message: msg, sender: auth.currentUser.displayName || "User", createdAt: Date.now(), status: "unread" }); }
+    function listenNoti() {
+    if(!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) return;
+    
+    db.collection("notifications")
+      .where("receiverId", "==", ADMIN_EMAIL)
+      .where("status", "==", "unread")
+      .onSnapshot(s => {
+        s.docChanges().forEach(async c => { 
+            if(c.type === "added") { 
+                const data = c.doc.data();
+                // alert အစား console မှာပဲ အရင်ပြကြည့်ပါ
+                console.log("New Notification:", data.message);
+                
+                // notification ကို ချက်ချင်း read လုပ်ပစ်ပါ (ဒါမှ ထပ်ခါထပ်ခါ မပေါ်မှာ)
+                await db.collection("notifications").doc(c.doc.id).update({ status: "read" }); 
+            }
+        });
+    });
+}
+async function editPageName() {
+    const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
+    if (userDoc.data()?.isPremium) {
+        const newName = prompt("Enter New Page Name:", document.getElementById('pageNameHeader').innerText);
+        if (newName && newName.length > 2) {
+            await db.collection("users").doc(auth.currentUser.uid).update({ requestedPageName: newName });
+            alert("Page Name Updated!");
+        }
+    }
+}
+     // --- Branding Upload Logic (Senior Edition) ---
+    async function uploadBranding(type, input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const btnLabel = input.parentElement;
+        const originalText = btnLabel.innerHTML;
+        btnLabel.innerHTML = "⏳"; // Upload တင်နေစဉ် icon ပြောင်းထားမယ်
+
+        try {
+            // ၁။ ImgBB ကို အရင် Upload တင်မယ်
+            const fd = new FormData();
+            fd.append('image', file);
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { 
+                method: 'POST', 
+                body: fd 
+            });
+            const d = await res.json();
+            
+            if (d.success) {
+                const url = d.data.url;
+                const uid = auth.currentUser.uid;
+                const isDeveloper = (auth.currentUser.email === ADMIN_EMAIL);
+
+                // ၂။ Database ထဲမှာ Developer လား User လားခွဲပြီး သိမ်းမယ်
+                if (isDeveloper) {
+                    // Senior (Developer) ဆိုရင် Main Branding ကို ပြင်မယ်
+                    await db.collection("page_info").doc("main").set({ [type]: url }, { merge: true });
+                } else {
+                    // Page Admin (User) ဆိုရင် သူ့ရဲ့ User Document ထဲမှာ သိမ်းမယ်
+                    await db.collection("users").doc(uid).update({ [type]: url });
+                }
+                alert("Branding Updated Successfully! ✨");
+                location.reload(); // ပုံအသစ်ပေါ်လာအောင် Page ကို Refresh လုပ်မယ်
+            }
+        } catch (e) {
+            console.error("Upload Error:", e);
+            alert("Upload failed! Please try again.");
+        } finally {
+            btnLabel.innerHTML = originalText;
+        }
+    }
+// ပုံကို Full Screen ပြသရန် Function
+function openFullImg(url) {
+    const modal = document.getElementById('imgModal');
+    if (modal) {
+        document.getElementById('modalImg').src = url;
+        modal.style.display = 'flex';
+    } else {
+        // Modal မဆောက်ရသေးရင် Alert နဲ့ပဲ ပြပေးထားမယ်
+        window.open(url, '_blank');
+    }
+}
+function checkStatus(myUid, targetUid) {
+    const postBox = document.getElementById('postBoxArea'); // သင့် Post တင်တဲ့ div id
+    if (myUid === targetUid || auth.currentUser.email === ADMIN_EMAIL) {
+        if(postBox) postBox.style.display = 'block';
+        showAdmin(); // Admin ခလုတ်တွေပြမယ်
+    } else {
+        if(postBox) postBox.style.display = 'none';
+    }
+}
+
+</script>
+</body>
+</html>
+
+
