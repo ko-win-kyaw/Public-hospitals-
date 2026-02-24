@@ -135,12 +135,13 @@
                 return; 
             }
             
-    
+            // ၂။ အခြေခံ Data တွေ Load လုပ်မယ်
             loadBranding(); 
             loadPosts(); 
             loadMembers(); 
             listenNoti();
 
+            // ၃။ Status စစ်မယ် (ဒါက User ဟာ Admin လား Member လား ခွဲပေးမှာပါ)
             checkStatus(user.uid);
             
         } else { 
@@ -174,22 +175,21 @@ function loadPosts(pageOwnerId = null) {
     const feed = document.getElementById('feed') || document.getElementById('newsFeed');
     const uid = auth.currentUser.uid;
 
+    // အခြေခံ Query
     let query = db.collection("page_posts");
 
+    // ၁။ Filter Logic: pageOwnerId ရှိရင် အဲ့ဒီလူရဲ့ Post ပဲပြမယ်
     if (pageOwnerId) {
         query = query.where("uid", "==", pageOwnerId);
     }
 
-    // ၁။ Pin ထားတာ အပေါ်ရောက်အောင် စီထားတဲ့ Senior ရဲ့ နဂို Logic အတိုင်းပါပဲ
+    // ၂။ Sorting Logic (Pin ထားတာ အပေါ်တင်မယ်၊ ပြီးမှ အချိန်အလိုက်စီမယ်)
     query.orderBy("isPinned", "desc").orderBy("createdAt", "desc").onSnapshot(snap => {
         
         snap.docChanges().forEach(change => {
             const d = change.doc.data(); 
             const id = change.doc.id;
             const isOwnerOrDev = (d.uid === uid) || (auth.currentUser.email === ADMIN_EMAIL);
-
-            // Pin ဖြစ်မဖြစ်ကို စစ်ထားတဲ့ Boolean လေးပါ (UI မှာ သုံးဖို့)
-            const pinnedStatus = (d.isPinned === 1 || d.isPinned === true);
 
             if (change.type === "added") {
                 const div = document.createElement('div'); 
@@ -198,6 +198,7 @@ function loadPosts(pageOwnerId = null) {
                 div.dataset.id = id;
                 
                 let mediaHTML = "";
+                // --- Media Logic (Grid System & Video) ---
                 if (d.mediaUrls && d.mediaUrls.length > 0) {
                     if (d.mediaType === 'video') {
                         mediaHTML = `<video src="${d.mediaUrls[0]}" controls class="post-media" style="height:auto; max-height:400px;"></video>`;
@@ -212,10 +213,9 @@ function loadPosts(pageOwnerId = null) {
                     mediaHTML = d.mediaType === 'video' ? `<video src="${d.mediaUrl}" controls class="post-media"></video>` : `<img src="${d.mediaUrl}" class="post-media" onclick="openFullImg('${d.mediaUrl}')">`;
                 }
 
-                // Interaction & UI Logic (Pin UI ကို ပိုသေသပ်အောင် ဖြည့်ထားပါတယ်)
+                // --- Interaction & UI Logic (နဂိုအတိုင်း အပြည့်အစုံ) ---
                 div.innerHTML = `
                     <div style="font-size:12px; color:gray; margin-bottom:8px;">
-                        ${pinnedStatus ? '<span style="color:red; font-weight:bold;">📌 Pinned Post</span><br>' : ''}
                         <b>${d.author}</b> • <span id="v-${id}">${d.views || 0}</span> views <br>
                         <span class="time-label">${formatTime(d.createdAt)}</span>
                     </div>
@@ -229,7 +229,7 @@ function loadPosts(pageOwnerId = null) {
                         <span onclick="sharePost('${id}')" style="cursor:pointer; color:purple;">🚀 Share</span>
                         ${isOwnerOrDev ? `
                             <span onclick="deleteAnythingWithCleanup('${id}')" style="color:red; cursor:pointer;">🗑️</span> 
-                            <span onclick="togglePin('${id}', ${d.isPinned})" style="color:${pinnedStatus ? 'red' : 'gray'}; cursor:pointer;">📌</span>
+                            <span onclick="togglePin('${id}', ${d.isPinned})" style="color:${d.isPinned ? 'red' : 'gray'}; cursor:pointer;">📌</span>
                         ` : ''}
                     </div>
                     <div class="comment-box" id="cb-${id}">
@@ -245,6 +245,7 @@ function loadPosts(pageOwnerId = null) {
                 loadComments(id);
             }
 
+            // --- Modified Logic (Update Reactions/Views) ---
             if (change.type === "modified") {
                 const lEl = document.getElementById(`l-${id}`);
                 const hEl = document.getElementById(`h-${id}`);
@@ -253,15 +254,10 @@ function loadPosts(pageOwnerId = null) {
                 if (hEl) hEl.innerText = d.hahas || 0;
                 if (vEl) vEl.innerText = d.views || 0;
 
-                // Pin Status ပြောင်းလဲမှုကို ချက်ချင်းပြဖို့ (Modified Logic)
                 const intBox = document.getElementById(`int-${id}`);
-                if (intBox && isOwnerOrDev) {
+                if (intBox) {
                     const pinBtn = intBox.querySelector('span:last-child');
-                    if(pinBtn) {
-                        pinBtn.style.color = pinnedStatus ? 'red' : 'gray';
-                        // status အသစ်ကိုပါ onclick မှာ update လုပ်ပေးရပါမယ်
-                        pinBtn.setAttribute("onclick", `togglePin('${id}', ${d.isPinned})`);
-                    }
+                    if(pinBtn && isOwnerOrDev) pinBtn.style.color = d.isPinned ? 'red' : 'gray';
                 }
             }
         });
@@ -367,7 +363,6 @@ function previewMedia(i) {
         document.getElementById('mediaPreview').innerHTML = "";
         document.getElementById('mediaPreview').style.display = 'none'; 
     }
-
 async function handleReact(postId, type) {
     try {
         const ref = db.collection("page_posts").doc(postId);
@@ -397,7 +392,8 @@ async function handleReact(postId, type) {
                 [field]: firebase.firestore.FieldValue.arrayUnion(uid), 
                 [countField]: firebase.firestore.FieldValue.increment(1) 
             });
-                    // Post ပိုင်ရှင်ဆီ Noti ပို့မယ်
+            
+            // Post ပိုင်ရှင်ဆီ Noti ပို့မယ်
             sendNoti(`${auth.currentUser.displayName} reacted to your post`);
         }
     } catch (error) {
@@ -497,16 +493,18 @@ function viewOtherPage(pageOwnerId) {
 
     window.location.href = "phospital.html?id=" + pageOwnerId;
 }
+
 async function searchPage() {
     const query = document.getElementById('pageSearch').value.toLowerCase().trim();
     const resBox = document.getElementById('searchResults');
     
+    // စာမရိုက်ထားရင် result box ကို ပိတ်ထားမယ်
     if (!query) { 
         resBox.style.display = "none"; 
         return; 
     }
 
-    // ၁။ Users collection ကနေ Page ဖွင့်ထားသူအားလုံးကို ရှာမယ်
+    // ၁။ Users collection တစ်ခုလုံးကို ဆွဲထုတ်မယ် (Premium စစ်တာကို ဖြုတ်လိုက်ပါပြီ)
     const snap = await db.collection("users").get();
 
     resBox.innerHTML = ""; 
@@ -514,6 +512,7 @@ async function searchPage() {
 
     snap.forEach(doc => {
         const data = doc.data();
+        // ၂။ Page Name ရှိတဲ့သူတွေကိုပဲ စစ်ထုတ်ယူမယ်
         const pageName = data.requestedPageName || "";
         
         if (pageName && pageName.toLowerCase().includes(query)) {
@@ -524,6 +523,7 @@ async function searchPage() {
             item.className = "search-item";
             item.style = "padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: center; gap: 12px;";
             
+            // Profile ပုံရှိရင်ပြမယ်၊ မရှိရင် default icon ပြမယ်
             const profilePic = data.profile ? 
                 `<img src="${data.profile}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border:1px solid #ddd;">` : 
                 `<div style="width:35px; height:35px; border-radius:50%; background:#eee; display:flex; align-items:center; justify-content:center;">📄</div>`;
@@ -536,59 +536,49 @@ async function searchPage() {
                 </div>
             `;
             
-            // 🔥 ဒီနေရာက အဓိကပြင်လိုက်တဲ့ Logic ပါ Senior
+            // ၃။ နှိပ်လိုက်ရင် phospital.html ကို ပိုင်ရှင်ရဲ့ ID နဲ့အတူ ပို့ပေးမယ်
             item.onclick = () => {
-                console.log("Navigating to Page ID:", doc.id);
                 resBox.style.display = "none";
                 document.getElementById('pageSearch').value = "";
-                
-                // ?id= parameter နဲ့အတူ phospital.html ကို သွားစေမယ်
-                window.location.href = "phospital.html?id=" + doc.id;
+                window.location.href = `phospital.html?id=${doc.id}`;
             };
             
             resBox.appendChild(item);
         }
     });
 
+    // ရလဒ်မရှိရင် ပိတ်မယ်
     if (!hasResults) resBox.style.display = "none";
 }
-async function loadBranding() {
-    if (!auth.currentUser) return;
-    
-    const uid = auth.currentUser.uid;
-    const isAdmin = (auth.currentUser.email === ADMIN_EMAIL);
 
-    // HTML Element တွေ ရှိမရှိ အရင်စစ်မယ်
-    const coverDisplay = document.getElementById('coverDisplay');
-    const profileDisplay = document.getElementById('profileDisplay');
-    const nameHeader = document.getElementById('pageNameHeader');
+    async function loadBranding() {
+        const uid = auth.currentUser.uid;
+        const isAdmin = (auth.currentUser.email === ADMIN_EMAIL);
 
-    // ၁။ Developer (Senior) အတွက် Main Branding ကို ဆွဲထုတ်မယ်
-    if (isAdmin) {
-        db.collection("page_info").doc("main").onSnapshot(doc => {
-            if (doc.exists) {
-                const data = doc.data();
-                if (coverDisplay && data.cover) coverDisplay.src = data.cover;
-                if (profileDisplay && data.profile) profileDisplay.src = data.profile;
-                if (nameHeader && data.pageTitle) nameHeader.innerText = data.pageTitle;
-            }
-        });
+        if (isAdmin) {
+            // Developer အတွက် Main Info ကို ဆွဲထုတ်မယ်
+            db.collection("page_info").doc("main").onSnapshot(d => {
+                if(d.exists){
+                    document.getElementById('coverDisplay').src = d.data().cover || 'https://via.placeholder.com/400x180';
+                    document.getElementById('profileDisplay').src = d.data().profile || 'https://via.placeholder.com/100';
+                    document.getElementById('pageNameHeader').innerText = d.data().pageTitle || "Main Community";
+                }
+            });
+        } else {
+            // ရိုးရိုး User Page Admin အတွက် သူ့ရဲ့ Profile ကို ဆွဲထုတ်မယ်
+            db.collection("users").doc(uid).onSnapshot(d => {
+                if(d.exists){
+                    const data = d.data();
+                    document.getElementById('coverDisplay').src = data.cover || 'https://via.placeholder.com/400x180';
+                    document.getElementById('profileDisplay').src = data.profile || 'https://via.placeholder.com/100';
+                    document.getElementById('pageNameHeader').innerText = data.requestedPageName || "My Community";
+                }
+            });
+        }
     }
 
-    // ၂။ User (Page Admin) အတွက် သူ့ရဲ့ Profile က ဒေတာကို ဆွဲထုတ်မယ်
-    // ဒီနေရာမှာ Senior ရဲ့ logic အတိုင်း users collection ကို သုံးထားပါတယ်
-    db.collection("users").doc(uid).onSnapshot(doc => {
-        if (doc.exists) {
-            const data = doc.data();
-            // ပုံရှိမှ အစားထိုးမယ် (မရှိရင် placeholder ပဲ ဆက်ပြမယ်)
-            if (coverDisplay && data.cover) coverDisplay.src = data.cover;
-            if (profileDisplay && data.profile) profileDisplay.src = data.profile;
-            if (nameHeader && data.requestedPageName) nameHeader.innerText = data.requestedPageName;
-        }
-    });
-}
 
-  // --- User Role & Admin Status Check ---
+    // --- User Role & Admin Status Check ---
     async function checkStatus(uid) {
         try {
             const uDoc = await db.collection("users").doc(uid).get();
@@ -677,22 +667,19 @@ async function deleteAnythingWithCleanup(id) {
         alert("ဖျက်လို့မရပါ (Permission Denied)");
     }
 }
+
+
 async function togglePin(id, curStatus) {
     try {
-        // logic: status က true သို့မဟုတ် 1 ဖြစ်နေရင် ဖြုတ်မယ် (0)၊ မဟုတ်ရင် တပ်မယ် (1)
-        const newStatus = (curStatus === 1 || curStatus === true) ? 0 : 1;
-        
+        const newStatus = (curStatus == 1 || curStatus === true) ? 0 : 1;
         await db.collection("page_posts").doc(id).update({ 
             isPinned: newStatus 
         });
-        
-        // UI မှာ ချက်ချင်း သိသာအောင် alert ပေးလို့ရပါတယ် (optional)
-        console.log(`Post ${id} pin status changed to: ${newStatus}`);
     } catch (e) {
         console.error("Pin error:", e);
-        alert("Pin လုပ်လို့မရပါ (Permission error)");
     }
 }
+
     async function joinPage() { await db.collection("page_members").doc(auth.currentUser.uid).set({ uid: auth.currentUser.uid, joinedAt: Date.now() }); location.reload(); }
     function toggleC(id) { const b = document.getElementById(`cb-${id}`); b.style.display = b.style.display==='block'?'none':'block'; }
     function loadMembers() { db.collection("page_members").onSnapshot(s => document.getElementById('memberCount').innerText = `${s.size} Members`); }
@@ -726,46 +713,49 @@ async function editPageName() {
         }
     }
 }
-     async function uploadBranding(type, input) {
-    const file = input.files[0];
-    if (!file) return;
+     // --- Branding Upload Logic (Senior Edition) ---
+    async function uploadBranding(type, input) {
+        const file = input.files[0];
+        if (!file) return;
 
-    const btnLabel = input.parentElement;
-    const originalText = btnLabel.innerHTML;
-    btnLabel.innerHTML = "⏳"; 
+        const btnLabel = input.parentElement;
+        const originalText = btnLabel.innerHTML;
+        btnLabel.innerHTML = "⏳"; // Upload တင်နေစဉ် icon ပြောင်းထားမယ်
 
-    try {
-        const fd = new FormData();
-        fd.append('image', file);
-        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { 
-            method: 'POST', 
-            body: fd 
-        });
-        const d = await res.json();
-        
-        if (d.success) {
-            const url = d.data.url;
-            const uid = auth.currentUser.uid;
-            const isDeveloper = (auth.currentUser.email === ADMIN_EMAIL);
+        try {
+            // ၁။ ImgBB ကို အရင် Upload တင်မယ်
+            const fd = new FormData();
+            fd.append('image', file);
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { 
+                method: 'POST', 
+                body: fd 
+            });
+            const d = await res.json();
+            
+            if (d.success) {
+                const url = d.data.url;
+                const uid = auth.currentUser.uid;
+                const isDeveloper = (auth.currentUser.email === ADMIN_EMAIL);
 
-            if (isDeveloper) {
-                // Senior (Developer) ဆိုရင် Main Branding ကို ပြင်မယ်
-                await db.collection("page_info").doc("main").set({ [type]: url }, { merge: true });
-            } else {
-                // Page Admin (User) ဆိုရင် သူ့ရဲ့ User Document ထဲမှာ merge သုံးပြီး သိမ်းမယ် (doc မရှိရင် error မတက်အောင်)
-                await db.collection("users").doc(uid).set({ [type]: url }, { merge: true });
+                // ၂။ Database ထဲမှာ Developer လား User လားခွဲပြီး သိမ်းမယ်
+                if (isDeveloper) {
+                    // Senior (Developer) ဆိုရင် Main Branding ကို ပြင်မယ်
+                    await db.collection("page_info").doc("main").set({ [type]: url }, { merge: true });
+                } else {
+                    // Page Admin (User) ဆိုရင် သူ့ရဲ့ User Document ထဲမှာ သိမ်းမယ်
+                    await db.collection("users").doc(uid).update({ [type]: url });
+                }
+                alert("Branding Updated Successfully! ✨");
+                location.reload(); // ပုံအသစ်ပေါ်လာအောင် Page ကို Refresh လုပ်မယ်
             }
-            alert("Branding Updated Successfully! ✨");
+        } catch (e) {
+            console.error("Upload Error:", e);
+            alert("Upload failed! Please try again.");
+        } finally {
+            btnLabel.innerHTML = originalText;
         }
-    } catch (e) {
-        console.error("Upload Error:", e);
-        alert("Upload failed! Please try again.");
-    } finally {
-        btnLabel.innerHTML = originalText;
     }
-}
-
-
+// ပုံကို Full Screen ပြသရန် Function
 function openFullImg(url) {
     const modal = document.getElementById('imgModal');
     if (modal) {
@@ -776,11 +766,8 @@ function openFullImg(url) {
         window.open(url, '_blank');
     }
 }
-
 </script>
 </body>
 </html>
 
-    
-    
-    
+
