@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health & Community App</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://openfpcdn.io/fingerprintjs/v4/iife.js"></script>
+
+    <style>
+        :root { --main-purple: #a332c3; --gold: #f3b64d; }
+        body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding-bottom: 50px; }
+        
+        .search-container { position: relative; flex: 1; }
+        .search-input { width: 100%; border-radius: 20px; border: none; padding: 8px 15px; outline: none; box-sizing: border-box; }
+        .search-results-box { position: absolute; background: white; width: 100%; top: 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: none; color: black; max-height: 200px; overflow-y: auto; }
+        .post-box { background: white; margin: 10px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .post-box textarea { width: 100%; border: none; resize: none; font-size: 16px; outline: none; }
+        #mediaPreview { margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-content { background: white; padding: 20px; border-radius: 15px; width: 85%; max-width: 400px; text-align: center; }
+    </style>
+        <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+
+    <header class="header-container">
+        <div class="logo">
+            <div class="e-box"><span class="e-letter">E</span></div>
+            <span class="logo-text">motion</span>
+        </div>
+        <div class="search-container">
+            <input type="text" id="pageSearch" class="search-input" placeholder="Search..." oninput="searchPage('health_posts', 'author')">
+            <div id="searchResults" class="search-results-box"></div>
+        </div>
+    </div>
+    </header>
+    <div class="post-box">
+        <textarea id="postText" placeholder="ဘာတွေဝေမျှချင်လဲ Senior?"></textarea>
+        <div id="mediaPreview"></div>
+        <hr style="border: 0.5px solid #eee; margin: 10px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label style="cursor: pointer; color: var(--main-purple); font-weight: bold;">
+                🖼️ Media <input type="file" id="mediaInput" multiple hidden accept="image/*,video/*" onchange="previewMedia(this)">
+            </label>
+            <button id="btnPost" onclick="handlePost('health_posts')" style="background: var(--main-purple); color: white; border: none; padding: 8px 25px; border-radius: 20px; font-weight: bold; cursor: pointer;">တင်မည်</button>
+        </div>
+    </div>
+
+    <div id="newsFeed" style="padding: 10px;"></div>
+
+    <div id="nameSetupModal" class="modal">
+        <div class="modal-content">
+            <h3>Senior ရဲ့ နာမည်သတ်မှတ်ပါ</h3>
+            <input type="text" id="setupUserName" placeholder="အမည်..." style="width:100%; padding:10px; margin: 10px 0; border-radius:8px; border:1px solid #ddd;">
+            <button onclick="saveInitialName()" style="background: var(--main-purple); color:white; border:none; padding:10px 20px; border-radius:8px; width:100%;">သိမ်းမည်</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
