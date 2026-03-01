@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Developer Panel | EmotioN</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        :root { --purple: #800080; --bg: #f0f2f5; --card: #ffffff; --danger: #ff4757; --success: #2ed573; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+        .admin-container { max-width: 900px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, var(--purple), #4b0082); color: white; padding: 25px; border-radius: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+        .manager-card { background: var(--card); padding: 25px; border-radius: 18px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); }
+        h4 { margin: 0 0 15px 0; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+        .input-group { display: flex; gap: 12px; margin-top: 10px; }
+        input { flex: 1; padding: 14px; border: 2px solid #edf2f7; border-radius: 12px; outline: none; }
+        .btn { padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: 700; border: none; transition: 0.3s; font-size: 14px; }
+        .btn-vip { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; margin-bottom: 10px; background: #fff; border: 1px solid #f0f0f0; }
+        .user-info b { color: var(--purple); font-size: 15px; }
+        .user-info small { color: #718096; display: block; }
+        .feedback-card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 15px; border-left: 5px solid var(--purple); }
+        #userListArea { max-height: 400px; overflow-y: auto; }
+        .btn-reset {
+    background-color: #f39c12;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.btn-reset:hover {
+    background-color: #e67e22;
+}
+
+    </style>
+</head>
+<body>
+
+<div class="admin-container" id="adminContent" style="display: none;">
+    <div class="header">
+        <div>
+            <h2 style="margin:0;">Dev Panel ⚙️</h2>
+            <small id="welcomeName">Welcome back, Senior</small>
+        </div>
+        <button class="btn" style="background:white; color:var(--purple);" onclick="location.reload()">Refresh Data</button>
+    </div>
+
+    <div class="manager-card" style="border-top: 5px solid gold;">
+        <h4>🔔 Pending Page Requests</h4>
+        <div id="requestListArea"><p style="text-align:center; color:#999;">Loading requests...</p></div>
+    </div>
+
+    <div class="manager-card">
+        <h4>🚀 Friends Limit Manager</h4>
+        <div class="input-group">
+            <input type="text" id="targetUid" placeholder="Paste User UID here...">
+            <button class="btn btn-vip" onclick="makeVIP()">Upgrade to 10k</button>
+        </div>
+    </div>
+<div class="manager-card">
+    <h4>👥 Registered Users & Device IDs</h4>
+    <input type="text" id="userSearchInput" placeholder="အမည်ဖြင့် ရှာရန်..." onkeyup="searchUsers()" style="width:100%; padding:8px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc;">
+    
+    <div id="userListArea">
+        </div>
+</div>
+
+    <div class="manager-card" style="border-top: 5px solid var(--danger);">
+        <h4 style="color: var(--danger);">🚫 Danger Zone: Ban System</h4>
+        <div class="input-group">
+            <input type="text" id="banTarget" placeholder="Device ID က ဒီမှာပေါ်လာမယ်">
+            <button class="btn btn-danger" onclick="banUser()">Permanently Ban</button>
+        </div>
+    </div>
+<div class="manager-card" style="border-top: 5px solid #007bff;">
+    <h4 style="color: #007bff;">📢 Broadcast System (User အားလုံးကို Message ပို့ရန်)</h4>
+    <div class="input-group" style="flex-direction: column;">
+        <input type="text" id="broadcastTitle" placeholder="ခေါင်းစဉ် (ဥပမာ - Update အသစ်ထွက်ပြီ)" style="margin-bottom: 10px;">
+        <textarea id="broadcastMsg" placeholder="သတင်းစကား အပြည့်အစုံ ရေးပေးပါ Senior..." 
+                  style="width: 100%; padding: 12px; border: 2px solid #edf2f7; border-radius: 12px; height: 100px; font-family: inherit; outline: none;"></textarea>
+        <button class="btn" style="background: #007bff; color: white; margin-top: 10px;" onclick="sendBroadcast()">
+            🚀 Send to All Users
+        </button>
+    </div>
+</div>
+
+    <h4>📝 Recent Feedbacks</h4>
+    <div id="feedbackList"></div>
+</div>
+
+<div id="denied" style="display:none; text-align:center; margin-top:100px;">
+    <h1 style="color:var(--danger);">Access Denied! ❌</h1>
+    <p>Developer Gmail ဖြင့် ဝင်ရောက်ပေးပါ။</p>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4Yiez3VXKD90za0wnt03lFPjeln4su7U",
+        authDomain: "hospital-app-caf85.firebaseapp.com",
+        projectId: "hospital-app-caf85",
+        storageBucket: "hospital-app-caf85.firebasestorage.app",
+        messagingSenderId: "736486429191",
+        appId: "1:736486429191:web:25c116beb3994d213cd0a2"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    const seniorEmail = "uwinkyawdevelopbusinessco@gmail.com"; // တစ်နေရာတည်းမှာပဲ ကြေညာပါ
+// --- ၁။ Auth State & Initial Load ---
+auth.onAuthStateChanged(user => {
+    if (user && user.email === seniorEmail) {
+        document.getElementById('adminContent').style.display = 'block';
+        document.getElementById('welcomeName').innerText = `Senior: ${user.displayName || 'Developer'}`;
+        
+        // အရေးကြီး လုပ်ဆောင်ချက်များ စတင်မည်
+        loadRequests();
+        loadUserList();
+        loadFeedbacks();
+    } else {
+        document.getElementById('denied').style.display = 'block';
+    }
+});
+
+// --- ၂။ User List Loader (ပေါင်းစည်းပြီးသား) ---
+function loadUserList() {
+    // onSnapshot သုံးထားလို့ Real-time ဖြစ်နေပါမယ်
+    db.collection("users").orderBy("createdAt", "desc").limit(50).onSnapshot(snap => {
+        const area = document.getElementById('userListArea');
+        area.innerHTML = "";
+        
+        snap.forEach(doc => {
+            const u = doc.data();
+            const uid = doc.id;
+            const devId = u.deviceId || u.lastDeviceId || ""; 
+            const name = u.displayName || u.name || "Unknown";
+            const isBanned = u.isBanned || false;
+
+            // Badge Logic
+            let badge = "";
+            if (u.isCrown) badge = "👑";
+            else if (u.isGold) badge = "⭐";
+
+            const div = document.createElement('div');
+            div.className = "user-item user-admin-card"; // search အတွက် class ပေါင်းပေးထားသည်
+            div.style.borderLeft = isBanned ? "5px solid #ff4757" : "1px solid #eee";
+            
+            div.innerHTML = `
+                <div class="user-info" onclick="copyToForm('${uid}', '${devId}')" style="cursor:pointer; flex:1;">
+                    <b>${badge} ${name}</b> ${isBanned ? '<small style="color:red;">(BANNED)</small>' : ''}
+                    <small style="color:gray;">UID: ${uid.substring(0,8)}... | Device: ${devId ? devId.substring(0,10) : 'N/A'}</small>
+                </div>
+                <div class="user-actions" style="display:flex; gap:5px;">
+                    <button onclick="resetUserDevice('${uid}')" class="btn-reset" style="font-size:10px; padding:5px 8px;">
+                        🔄 Reset
+                    </button>
+                </div>`;
+            area.appendChild(div);
+        });
+    });
+}
+
+// User ကို နှိပ်ရင် Form ထဲ copy ကူးပေးမည့် function
+function copyToForm(uid, devId) {
+    document.getElementById('banTarget').value = devId || "";
+    document.getElementById('targetUid').value = uid;
+    alert("User Info Copied!");
+}
+
+// --- ၃။ Upgrade Requests Logic ---
+function loadRequests() {
+    db.collection("upgrade_requests").where("status", "==", "pending").onSnapshot(snap => {
+        const area = document.getElementById('requestListArea');
+        area.innerHTML = snap.empty ? "<p style='text-align:center; color:#999;'>Upgrade တောင်းဆိုမှုများ မရှိသေးပါ</p>" : "";
+
+        snap.forEach(doc => {
+            const r = doc.data();
+            const rid = doc.id;
+            const div = document.createElement('div');
+            div.className = "user-item";
+            const themeColor = r.requestType === 'gold' ? '#daa520' : '#800080';
+            
+            div.innerHTML = `
+                <div class="user-info">
+                    <b style="color:${themeColor}">[${r.requestType.toUpperCase()}] ${r.userName}</b>
+                    <small>${r.email}</small>
+                </div>
+                <div style="display:flex; gap:5px;">
+                    <button class="btn btn-vip" onclick="approveUpgrade('${r.uid}', '${r.requestType}', '${rid}')">Approve</button>
+                    <button class="btn btn-danger" onclick="rejectUpgrade('${rid}')" style="padding:10px;">Reject</button>
+                </div>`;
+            area.appendChild(div);
+        });
+    });
+}
+
+async function approveUpgrade(userUid, type, requestId) {
+    if(!confirm(`ဤ User ကို ${type.toUpperCase()} အဖြစ် Upgrade ပေးမှာ သေချာလား Senior?`)) return;
+    
+    try {
+        let updateField = (type === 'gold') ? { isGold: true, isCrown: false } : { isCrown: true, isGold: false };
+        
+        await db.collection("users").doc(userUid).update(updateField);
+        await db.collection("upgrade_requests").doc(requestId).delete();
+
+        // User ဆီကို Noti ပို့မယ် (App ဖက်က Logic နဲ့ ညှိထားသည်)
+        await db.collection("notifications").add({
+            receiverId: userUid,
+            title: "Membership Approved! 🎉",
+            body: `ဂုဏ်ယူပါတယ်! သင်၏အကောင့်ကို ${type.toUpperCase()} အဖြစ် အတည်ပြုလိုက်ပါပြီ။`,
+            status: "unread",
+            icon: 'https://i.ibb.co/RkJCm6CV/Gallery-1772168024425.jpg',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        alert("Upgrade Success! Database မှာ အလိုအလျောက် ပြင်ပြီးပါပြီ။");
+    } catch (e) { alert("Error: " + e.message); }
+}
+
+// --- ၄။ Ban & VIP System ---
+async function banUser() {
+    const targetDevice = document.getElementById('banTarget').value;
+    const targetUid = document.getElementById('targetUid').value;
+
+    if(!targetUid) return alert("User တစ်ဦးကို အရင် ရွေးချယ်ပေးပါ Senior");
+    if(!confirm("ဤ User ကို အပြီးတိုင် Ban မှာ သေချာလား?")) return;
+
+    try {
+        const batch = db.batch();
+
+        // Device ပါရှိလျှင် Blacklist သို့ ထည့်မည်
+        if (targetDevice) {
+            const deviceRef = db.collection("banned_devices").doc(targetDevice);
+            batch.set(deviceRef, { 
+                deviceId: targetDevice, 
+                bannedUid: targetUid,
+                bannedAt: firebase.firestore.FieldValue.serverTimestamp(), 
+                adminBy: seniorEmail 
+            });
+        }
+
+        // User Account ကို Ban မည်
+        const userRef = db.collection("users").doc(targetUid);
+        batch.update(userRef, { 
+            isBanned: true,
+            bannedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await batch.commit();
+        alert("Account ရော Device ပါ Ban ပြီးပါပြီ Senior!");
+        document.getElementById('banTarget').value = "";
+        document.getElementById('targetUid').value = "";
+    } catch (e) { alert("Ban Error: " + e.message); }
+}
+
+async function makeVIP() {
+    const uid = document.getElementById('targetUid').value;
+    if(!uid) return alert("UID ထည့်ပါဦးဗျ");
+    await db.collection("users").doc(uid).update({ friendLimit: 10000, isVIP: true });
+    alert("Upgraded to 10k Friends Limit!");
+}
+
+// --- ၅။ Broadcast & Feedback ---
+async function sendBroadcast() {
+    const title = document.getElementById('broadcastTitle').value.trim();
+    const message = document.getElementById('broadcastMsg').value.trim();
+
+    if (!title || !message) return alert("စာသား အပြည့်အစုံ ဖြည့်ပေးပါ Senior");
+    if (!confirm("User အားလုံးဆီ ပို့မှာ သေချာလား?")) return;
+
+    try {
+        const usersSnap = await db.collection("users").get();
+        let batch = db.batch();
+        let counter = 0;
+
+        for (const userDoc of usersSnap.docs) {
+            const notiRef = db.collection("notifications").doc();
+            batch.set(notiRef, {
+                receiverId: userDoc.id,
+                title: title,
+                body: message,
+                status: "unread",
+                icon: 'https://i.ibb.co/RkJCm6CV/Gallery-1772168024425.jpg',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                isBroadcast: true
+            });
+
+            counter++;
+            if (counter % 450 === 0) {
+                await batch.commit();
+                batch = db.batch();
+            }
+        }
+        await batch.commit();
+        alert(`အောင်မြင်ပါသည်! User ${counter} ဦးထံ ပို့ပြီးပါပြီ။`);
+        document.getElementById('broadcastTitle').value = "";
+        document.getElementById('broadcastMsg').value = "";
+    } catch (e) { alert("Broadcast Error: " + e.message); }
+}
+
+function loadFeedbacks() {
+    db.collection("feedbacks").orderBy("createdAt", "desc").limit(15).onSnapshot(snap => {
+        const list = document.getElementById('feedbackList');
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            const div = document.createElement('div');
+            div.className = "feedback-card";
+            div.innerHTML = `<b>${d.userName || 'Unknown'}</b><div class="msg-text">${d.feedbackMsg || d.text}</div>`;
+            list.appendChild(div);
+        });
+    });
+}
+
+// --- ၆။ Search & Tools ---
+function searchUsers() {
+    let input = document.getElementById('userSearchInput').value.toLowerCase();
+    let cards = document.getElementsByClassName('user-admin-card');
+
+    for (let card of cards) {
+        let name = card.innerText.toLowerCase();
+        card.style.display = name.includes(input) ? "flex" : "none";
+    }
+}
+
+async function resetUserDevice(uid) {
+    if(!confirm("Device Lock ကို ဖြေရှင်းပေးမှာ သေချာလား?")) return;
+    await db.collection("users").doc(uid).update({ deviceId: "", lastDeviceId: "" });
+    alert("Device Lock Reset Success!");
+}
+
+</script>
+</body>
+</html>
