@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Page - Senior Master</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        :root { --p: #800080; --bg: #f0f2f5; }
+        body { background: var(--bg); margin: 0; font-family: sans-serif; padding-bottom: 70px; }
+        .header-box { background: white; border-radius: 0 0 20px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding-bottom: 12px; }
+        .cover-area { width: 100%; height: 180px; background: #ddd; position: relative; overflow: hidden; }
+        .cover-img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-area { padding: 15px; margin-top: -50px; display: flex; align-items: flex-end; gap: 12px; }
+        .p-img { width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; object-fit: cover; background: #eee; }
+        .card { background: white; margin: 12px; padding: 15px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .post-media { width: 100%; border-radius: 8px; margin-top: 10px; max-height: 400px; object-fit: cover; }
+        .admin-only { display: none; } /* JS ကနေ Role စစ်ပြီးမှ ပြပေးမှာပါ */
+        .btn-main { background: var(--p); color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+        
+        /* Search Box */
+        .search-container { margin: 10px 15px; position: relative; }
+        .search-box { display: flex; background: #f0f2f5; border-radius: 20px; padding: 8px 15px; border: 1px solid #ddd; align-items: center; }
+        .search-box input { border: none; outline: none; flex: 1; background: transparent; padding-left: 5px; }
+        #searchResults { position: absolute; width: 100%; background: white; z-index: 1000; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; max-height: 250px; overflow-y: auto; top: 45px; }
+
+        /* Bottom Nav */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 60px; background: white; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #eee; z-index: 2000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #666; font-size: 10px; }
+        .nav-item img { width: 22px; height: 22px; margin-bottom: 4px; }
+        .nav-item.active { color: var(--p); font-weight: bold; }
+        .badge-official { border-radius: 4px; font-weight: bold; margin-left: 3px; }
+.crown-bg { background: linear-gradient(45deg, #a020f0, #ff00ff); color: white; border: 1px solid #fff; }
+.gold-bg { background: gold; color: black; border: 1px solid #daa520; }
+    </style>
+        <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+
+    <div class="header-box">
+        <div class="cover-area">
+            <img id="coverDisplay" class="cover-img" src="https://via.placeholder.com/400x180">
+            <label class="admin-only" style="position:absolute; bottom:10px; right:10px; background:rgba(0,0,0,0.6); padding:8px; border-radius:50%; color:white; cursor:pointer;">
+                📸<input type="file" hidden accept="image/*" onchange="uploadBranding('cover', this)">
+            </label>
+        </div>
+        <div class="profile-area">
+            <div style="position:relative;">
+                <img id="profileDisplay" class="p-img" src="https://via.placeholder.com/100">
+                <label class="admin-only" style="position:absolute; bottom:5px; right:0; background:rgba(0,0,0,0.6); padding:5px; border-radius:50%; color:white; cursor:pointer;">
+                    📷<input type="file" hidden accept="image/*" onchange="uploadBranding('profile', this)">
+                </label>
+            </div>
+            <div style="flex:1;">
+                <h2 id="pageNameHeader" style="font-size: 17px; margin:0;">Community Page</h2>
+                <p id="memberCount" style="font-size: 11px; color: gray;">0 Members</p>
+            </div>
+            <div id="statusArea">
+                </div>
+        </div>
+
+        <div class="search-container">
+            <div class="search-box">
+                <span>🔍</span>
+                <input type="text" id="pageSearch" placeholder="ရှာဖွေရန်..." onkeyup="searchPage()" autocomplete="off">
+            </div>
+            <div id="searchResults"></div>
+        </div>
+    </div>
+
+    <div class="card admin-only">
+        <textarea id="postContent" rows="3" placeholder="ဗဟုသုတများ မျှဝေပါ Senior..." 
+            style="width: 100%; border: none; outline: none; font-family: inherit; resize: none; font-size: 15px;"></textarea>
+        
+        <div id="mediaPreviewBox" style="margin-top: 10px; display: none; border-radius: 8px; overflow: hidden;"></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
+            <label style="cursor: pointer; color: var(--p); font-weight: bold; font-size: 14px;">
+                🖼️ ပုံ/ဗီဒီယို ရွေးရန်
+                <input type="file" id="mediaInput" hidden accept="image/*,video/*" onchange="previewMedia(this)">
+            </label>
+            <button id="btnPost" class="btn-main" onclick="uploadAndPost()">တင်မည်</button>
+        </div>
+    </div>
+
+    <div id="newsFeed">
+        </div>
+
+    <nav class="bottom-nav">
+                       <a href="user.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/1946/1946488.png"><span data-lang="nav_user">User</span>
+        </a>
+
+        <a href="chat.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/589/589708.png"><span>Chat</span>
+        </a>
+        <a href="live.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/4404/4404094.png"><span>Live</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png"><span>Profile</span>
+        </a>
+    </nav>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetPageId = urlParams.get('id');
+
+        // --- 2. Auth Listener ---
+        auth.onAuthStateChanged(async user => {
+            if (user) {
+                const viewId = targetPageId || user.uid;
+                
+                // Branding ကို အရင် load မယ်
+                loadBranding(viewId);
+                loadMembers();
+                
+                // Admin လား Member လား စစ်မယ်
+                await checkStatus(user.uid, viewId);
+                
+                // Post တွေကို ဆွဲထုတ်မယ်
+                loadPosts(viewId);
+            } else { 
+                window.location.href = "user.html"; 
+            }
+        });
+
+        // --- 3. Status Check Logic ---
+        async function checkStatus(currentUid, viewId) {
+            const uDoc = await db.collection("users").doc(currentUid).get();
+            const userData = uDoc.data();
+            const isJoined = (await db.collection("page_members").doc(currentUid).get()).exists;
+            const area = document.getElementById('statusArea');
+
+            // ကိုယ့် page ကိုယ်ပြန်ကြည့်နေတာလား သို့မဟုတ် Developer လား စစ်ဆေးခြင်း
+            const isOwner = (currentUid === viewId);
+            const isDev = (auth.currentUser.email === ADMIN_EMAIL);
+
+            if (isOwner || isDev || userData?.isPremium) {
+                document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
+            }
+
+            if (!isJoined) {
+                area.innerHTML = `
+                    <button class="btn-main" onclick="joinPage()">Join</button> 
+                    <button class="btn-main" style="background:#444;" onclick="startPageCreation()">Create</button>`;
+            } else {
+                if (userData?.isPremium) {
+                    area.innerHTML = `<span style="color:purple; font-weight:bold; font-size:12px;">👑 Page Admin</span>`;
+                } else if (userData?.isRequestPending) {
+                    area.innerHTML = `<small style="color:orange;">⏳ Pending...</small>`;
+                } else {
+                    area.innerHTML = `<small style="color:green;">✓ Joined</small>`;
+                }
+            }
+        }
+
+        // --- 4. Branding (Profile/Cover Change) ---
+        async function uploadBranding(type, input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            alert("Uploading... ခဏစောင့်ပါ Senior");
+            const fd = new FormData();
+            fd.append('image', file);
+            
+            try {
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd });
+                const d = await res.json();
+                if (d.success) {
+                    await db.collection("users").doc(auth.currentUser.uid).update({ [type]: d.data.url });
+                    alert("အောင်မြင်စွာ ချိန်းလိုက်ပါပြီ!");
+                    location.reload();
+                }
+            } catch (e) { alert("Upload error!"); }
+        }
+
+        function loadBranding(viewId) {
+            db.collection("users").doc(viewId).onSnapshot(d => {
+                if(d.exists){
+                    const data = d.data();
+                    document.getElementById('coverDisplay').src = data.cover || 'https://via.placeholder.com/400x180';
+                    document.getElementById('profileDisplay').src = data.profile || 'https://via.placeholder.com/100';
+                    document.getElementById('pageNameHeader').innerText = data.requestedPageName || "Community Page";
+                }
+            });
+        }
+
+        // --- 5. Page Actions ---
+        async function joinPage() {
+            await db.collection("page_members").doc(auth.currentUser.uid).set({ uid: auth.currentUser.uid, joinedAt: Date.now() });
+            location.reload();
+        }
+
+        async function startPageCreation() {
+            const name = prompt("သင့် Page အမည်ကို ရိုက်ထည့်ပါ:");
+            if (name) {
+                await db.collection("users").doc(auth.currentUser.uid).update({ isRequestPending: true, requestedPageName: name });
+                await db.collection("admin_requests").add({ uid: auth.currentUser.uid, email: auth.currentUser.email, requestedPageName: name, status: "pending" });
+                alert("Request ပို့လိုက်ပါပြီ!"); location.reload();
+            }
+        }
+
+        function loadMembers() {
+            db.collection("page_members").onSnapshot(s => document.getElementById('memberCount').innerText = `${s.size} Members`);
+        }
+
+
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
