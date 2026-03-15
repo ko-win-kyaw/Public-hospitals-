@@ -1,0 +1,37 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # Senior ရဲ့ branch နာမည် master ဆိုရင် master လို့ပြောင်းပေးပါ
+
+jobs:
+  build_site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        # 🔥 ဒီနေရာက အဓိကပါ Senior! Secrets တွေကို Build process ထဲ ထည့်ပေးတာပါ
+        run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_ADMIN_EMAIL: ${{ secrets.VITE_ADMIN_EMAIL }}
+          VITE_IMGBB_KEY: ${{ secrets.VITE_IMGBB_KEY }}
+          VITE_BUNNY_KEY: ${{ secrets.VITE_BUNNY_KEY }}
+          VITE_BUNNY_STORAGE: ${{ secrets.VITE_BUNNY_STORAGE }}
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist # Vite သုံးရင် dist ပါ၊ ရိုးရိုးဆိုရင် project folder အလိုက် ပြောင်းပေးပါ
