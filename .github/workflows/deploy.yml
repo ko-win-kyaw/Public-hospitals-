@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main"] # Senior ရဲ့ branch နာမည် main မဟုတ်ရင် ပြင်ပေးပါ
+    branches: ["main"]
 
 permissions:
   contents: read
@@ -28,7 +28,6 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # GitHub Secrets က Key တွေကို Build လုပ်ချိန်မှာ ထည့်ပေးခြင်း
           VITE_ADMIN_EMAIL_1: ${{ secrets.VITE_ADMIN_EMAIL_1 }}
           VITE_ADMIN_EMAIL_2: ${{ secrets.VITE_ADMIN_EMAIL_2 }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
