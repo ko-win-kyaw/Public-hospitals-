@@ -1,16 +1,14 @@
-name: Deploy to GitHub Pages
+  name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: [ main ]
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 jobs:
-  build_and_deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,22 +26,16 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_ADMIN_EMAIL_1: ${{ secrets.VITE_ADMIN_EMAIL_1 }}
-          VITE_ADMIN_EMAIL_2: ${{ secrets.VITE_ADMIN_EMAIL_2 }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_ADMIN_EMAIL_1: ${{ secrets.VITE_ADMIN_EMAIL_1 }}
+          VITE_ADMIN_EMAIL_2: ${{ secrets.VITE_ADMIN_EMAIL_2 }}
           VITE_IMGBB_KEY: ${{ secrets.VITE_IMGBB_KEY }}
           VITE_BUNNY_KEY: ${{ secrets.VITE_BUNNY_KEY }}
           VITE_BUNNY_STORAGE: ${{ secrets.VITE_BUNNY_STORAGE }}
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './dist'
-
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          branch: gh-pages
